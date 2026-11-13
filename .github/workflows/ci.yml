@@ -40,3 +40,36 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  deploy-web:
+    needs: checks
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.9
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web for Cloudflare
+        run: pnpm --filter @app/web exec opennextjs-cloudflare build
+
+      - name: Install Wrangler
+        run: pnpm add -g wrangler@4.161.0
+
+      - name: Deploy to Cloudflare Workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          NEXT_PUBLIC_API_URL: http://vtvlriappeqo5figm9hphkxx.144.91.72.137.sslip.io
+        run: pnpm --filter @app/web exec wrangler deploy --var NEXT_PUBLIC_API_URL:$NEXT_PUBLIC_API_URL
