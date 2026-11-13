@@ -1,0 +1,22 @@
+{
+  "name": "@app/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tsconfig/base.json": "./tsconfig/base.json",
+    "./tsconfig/node.json": "./tsconfig/node.json",
+    "./tsconfig/nextjs.json": "./tsconfig/nextjs.json",
+    "./eslint/base.js": "./eslint/base.js"
+  },
+  "scripts": {
+    "lint": "eslint eslint --no-error-on-unmatched-pattern",
+    "typecheck": "echo \"@app/config is configuration only\"",
+    "test": "echo \"@app/config has no tests\""
+  },
+  "dependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint-config-prettier": "10.1.8",
+    "typescript-eslint": "8.72.2"
+  }
+}
