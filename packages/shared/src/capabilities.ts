@@ -26,14 +26,25 @@ export type JobType = (typeof JOB_TYPES)[number];
 export const JOB_STATUSES = ["queued", "running", "succeeded", "failed", "canceled"] as const;
 export type JobStatus = (typeof JOB_STATUSES)[number];
 
+/** The provider capability each user-facing job type needs. */
+export const JOB_TYPE_CAPABILITY: Record<JobType, Capability> = {
+  text_to_video: "text_to_video",
+  image_to_video: "image_to_video",
+  text_to_image: "text_to_image",
+  lip_sync: "lip_sync",
+  captions: "stt",
+};
+
 export const JOB_STEP_STATUSES = ["pending", "running", "succeeded", "failed", "skipped"] as const;
 export type JobStepStatus = (typeof JOB_STEP_STATUSES)[number];
 
 /** Generic step kinds so new tools plug into the same runner. */
 export const JOB_STEP_KINDS = [
+  "validate",
   "moderate",
   "submit",
   "wait",
+  "store",
   "download",
   "transcribe",
   "build_captions",

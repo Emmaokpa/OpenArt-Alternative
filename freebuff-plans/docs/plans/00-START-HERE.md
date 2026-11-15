@@ -48,6 +48,7 @@ Text-to-video · Image-to-video · Image generation · Lip sync · Captions
 5. Build against a **fake provider** first, so development costs $0.
 6. Keep job types, job steps and adapters generic so later tools plug in without rewrites.
 7. Deploy early and often, so hosting problems show up in week one, not at the end.
+8. **The UI is the `client/` prototype.** It is the design source of truth; Phase 3 ports it to Next.js inside `apps/web` (see `freebuff-plans/important.md`). Do not redesign it and do not ship the Vite prototype.
 
 ## Roadmap (details in `phase.md`)
 

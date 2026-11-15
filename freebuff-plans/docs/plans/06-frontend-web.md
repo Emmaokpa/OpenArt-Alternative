@@ -1,5 +1,15 @@
 # 06 — Frontend (Next.js on Cloudflare)
 
+## Source of truth: the `client/` prototype
+
+The developer built the real UI as a React + Vite prototype in `client/`. It is
+the design source of truth and is **ported, not redesigned**, in Phase 3. Keep
+its structure (banner, collapsible sidebar, top bar with credit pill, spotlighted
+prompt box, preset/model/template rails, footer, dark + pink/lime palette) and
+replace the hard-coded data with API calls. Full mapping and rules live in
+`freebuff-plans/important.md`. The prototype keeps using OpenArt's name, mark and
+stock images: preserve layout, replace branding/assets with ours before launch.
+
 ## Goals
 
 - A large prompt box on the home page with template and style examples underneath (OpenArt / Kling feel).
@@ -49,7 +59,8 @@ Next.js (App Router) + TypeScript, Tailwind CSS, shadcn/ui components, TanStack 
 
 ## Design direction
 
-- Dark theme with one strong accent color, large type, rounded cards, lots of video thumbnails. The same general feel as OpenArt and Kling.
+- Start from the `client/` prototype: dark `#0a0a0a` surface, `#121212` panels, one strong accent (pink `#ff2d8a`), lime `#c8f542` for badges, large type, rounded cards, lots of video thumbnails.
+- Port the prototype's shell and sections into `apps/web` using the mapping in `freebuff-plans/important.md`; do not keep `client/` as a second app.
 - **Do not copy** their logos, exact color values, copy, or layouts pixel for pixel. Define your own tokens and name.
 - Tokens in CSS variables: `--bg`, `--surface`, `--text`, `--muted`, `--accent`, `--danger`, spacing scale, radius scale. Support a light theme later.
 - Create the design in a design tool or with AI assistance first (home, create, library, pricing), then build components.

@@ -78,7 +78,7 @@ describe("unknown routes", () => {
     const response = await request(buildApp()).get("/does-not-exist");
 
     expect(response.status).toBe(404);
-    expect(response.body.error).toMatchObject({ code: "not_found" });
+    expect(response.body.error).toMatchObject({ code: "NOT_FOUND" });
     expect(response.body.error.requestId).toBeTypeOf("string");
   });
 });

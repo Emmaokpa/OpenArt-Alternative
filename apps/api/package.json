@@ -14,10 +14,22 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:prod": "node dist/migrate.js",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "seed": "node --env-file-if-exists=../../.env --import tsx src/seed.ts",
+    "seed:prod": "node dist/seed.js",
+    "worker:io": "node --env-file-if-exists=../../.env --import tsx src/worker-io.ts",
+    "worker:media": "node --env-file-if-exists=../../.env --import tsx src/worker-media.ts"
   },
   "dependencies": {
     "@app/shared": "workspace:*",
+    "@aws-sdk/client-s3": "3.1169.0",
+    "@aws-sdk/lib-storage": "3.1169.0",
+    "@aws-sdk/s3-request-presigner": "3.1169.0",
+    "@better-auth/drizzle-adapter": "1.7.23",
+    "@bull-board/api": "9.13.1",
+    "@bull-board/express": "9.13.1",
+    "better-auth": "1.7.23",
+    "bullmq": "6.7.6",
     "cors": "2.8.6",
     "drizzle-orm": "0.45.4",
     "express": "5.3.0",

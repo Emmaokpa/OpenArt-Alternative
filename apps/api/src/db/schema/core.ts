@@ -62,6 +62,8 @@ export const models = pgTable(
   "models",
   {
     id: text("id").primaryKey(),
+    label: text("label").notNull().default(""),
+    description: text("description"),
     capability: text("capability").notNull(),
     provider: text("provider").notNull(),
     providerModel: text("provider_model").notNull(),
@@ -179,8 +181,10 @@ export const jobs = pgTable(
     errorMessage: text("error_message"),
     idempotencyKey: text("idempotency_key"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }),
     finishedAt: timestamp("finished_at", { withTimezone: true }),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
   (table) => [
     index("jobs_user_created").on(table.userId, table.createdAt.desc()),
@@ -239,6 +243,7 @@ export const assets = pgTable(
     bucket: text("bucket").notNull(),
     objectKey: text("object_key").notNull(),
     mime: text("mime"),
+    originalName: text("original_name"),
     sizeBytes: bigint("size_bytes", { mode: "number" }),
     durationMs: integer("duration_ms"),
     width: integer("width"),

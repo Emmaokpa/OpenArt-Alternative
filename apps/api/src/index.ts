@@ -2,7 +2,14 @@ import { createApp } from "./app.js";
 import { createDatabase } from "./db/client.js";
 import { loadEnv } from "./env.js";
 import { createLogger } from "./logger.js";
-import { checkRedis } from "./redis.js";
+import { createMailer } from "./lib/mailer.js";
+import { createRateLimiter } from "./lib/rate-limit.js";
+import { createStorage } from "./lib/storage.js";
+import { createAuth } from "./modules/auth/auth.js";
+import { createProviderRegistry } from "./providers/registry.js";
+import { createQueues } from "./queue/queues.js";
+import { checkRedis, createRedis } from "./redis.js";
+import type { ApiContext } from "./routes/v1/context.js";
 import { API_VERSION } from "./version.js";
 
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -10,11 +17,31 @@ const SHUTDOWN_TIMEOUT_MS = 10_000;
 function main(): void {
   const env = loadEnv(process.env);
   const logger = createLogger(env);
-  const { pool } = createDatabase(env.DATABASE_URL, logger);
+  const { pool, db } = createDatabase(env.DATABASE_URL, logger, 10);
+  const redis = createRedis(env.REDIS_URL, logger);
+
+  const mailer = createMailer(env, logger);
+  const auth = createAuth({ env, db, logger, mailer });
+  const storage = createStorage(env, logger);
+  const providers = createProviderRegistry(env, logger);
+  const queues = createQueues(env, logger);
+  const rateLimiter = createRateLimiter(redis, logger);
+
+  const api: ApiContext = {
+    env,
+    logger,
+    db,
+    auth,
+    storage,
+    providers,
+    queues,
+    rateLimiter,
+  };
 
   const app = createApp({
     env,
     logger,
+    api,
     checks: {
       database: async () => {
         await pool.query("select 1");
@@ -46,7 +73,11 @@ function main(): void {
     forceExit.unref();
 
     server.close();
-    await pool.end();
+    await queues.close().catch((error: unknown) => {
+      logger.warn({ err: error }, "could not close queues");
+    });
+    redis.disconnect();
+    await pool.end().catch(() => undefined);
     process.exit(0);
   };
 

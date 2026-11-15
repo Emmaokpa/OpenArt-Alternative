@@ -1,9 +1,11 @@
 import cors from "cors";
 import express, { type Express } from "express";
+import { toNodeHandler } from "better-auth/node";
 import type { Env } from "./env.js";
 import { accessLog, errorHandler, notFound, requestContext } from "./http/middleware.js";
 import type { Logger } from "./logger.js";
 import { createHealthRouter, type HealthRouterOptions } from "./routes/health.js";
+import { createV1Router, type ApiContext } from "./routes/v1/index.js";
 import { API_VERSION } from "./version.js";
 
 export interface AppDependencies {
@@ -11,9 +13,11 @@ export interface AppDependencies {
   logger: Logger;
   checks: HealthRouterOptions["checks"];
   healthTimeoutMs?: number;
+  /** Omitted by tests that only exercise health and the error envelope. */
+  api?: ApiContext;
 }
 
-export function createApp({ env, logger, checks, healthTimeoutMs }: AppDependencies): Express {
+export function createApp({ env, logger, checks, healthTimeoutMs, api }: AppDependencies): Express {
   const app = express();
 
   app.disable("x-powered-by");
@@ -29,6 +33,13 @@ export function createApp({ env, logger, checks, healthTimeoutMs }: AppDependenc
       maxAge: 86_400,
     }),
   );
+
+  // Better Auth needs the raw request stream, so it is mounted before any body
+  // parser (see its Express integration guide).
+  if (api) {
+    app.all("/api/auth/{*any}", toNodeHandler(api.auth));
+  }
+
   app.use(express.json({ limit: "1mb" }));
 
   app.get("/", (_req, res) => {
@@ -36,6 +47,10 @@ export function createApp({ env, logger, checks, healthTimeoutMs }: AppDependenc
   });
 
   app.use(createHealthRouter({ checks, logger, timeoutMs: healthTimeoutMs }));
+
+  if (api) {
+    app.use("/v1", createV1Router(api));
+  }
 
   app.use(notFound());
   app.use(errorHandler(logger));

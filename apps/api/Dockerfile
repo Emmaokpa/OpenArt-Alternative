@@ -16,6 +16,10 @@ FROM base AS runner
 ENV NODE_ENV=production
 WORKDIR /repo
 
+# ffmpeg/ffprobe power thumbnails and upload validation. worker-media runs the
+# same image with `node dist/worker-media.js`; worker-io uses worker-io.js.
+RUN apk add --no-cache ffmpeg
+
 # Only the manifests needed to resolve the API's production dependencies.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json apps/api/package.json
@@ -26,6 +30,9 @@ COPY --from=build /repo/packages/shared/dist packages/shared/dist
 COPY --from=build /repo/apps/api/dist apps/api/dist
 # SQL migrations stay with the image so deploy can run dist/migrate.js.
 COPY --from=build /repo/apps/api/drizzle apps/api/drizzle
+# The fake provider reads bundled CC0 fixtures; real providers do not need them
+# but the image is identical in both modes.
+COPY --from=build /repo/apps/api/fixtures apps/api/fixtures
 
 WORKDIR /repo/apps/api
 ENV PORT=8080

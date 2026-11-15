@@ -98,7 +98,7 @@ Tooling: pnpm workspaces + Turborepo, TypeScript strict, ESLint, Prettier.
 
 ## Environments
 
-- **Local:** docker-compose with Postgres, Redis, and MinIO or a dev R2 bucket. Fake provider on by default.
+- **Local:** docker-compose with Postgres, Redis, and LocalStack (S3-compatible) or a dev R2 bucket. Fake provider on by default.
 - **Production:** the VPS.
 - **Staging (optional, later):** a small second VPS. Don't run staging on the production box, since 8 GB is tight.
 

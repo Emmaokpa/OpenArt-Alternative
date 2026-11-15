@@ -1,100 +1,73 @@
 # Progress
 
-## Current phase: 0 — Foundations ✅ COMPLETE
+## Current phase: 1 — Job engine ✅ COMPLETE
 
-Phase 0 is 100% complete. All code is complete and verified locally and in production.
+Phase 1 is complete and verified: `pnpm lint`, `pnpm typecheck`, `pnpm test` (42 tests) and `pnpm build` all pass. The API smoke-tested against real Postgres, Redis and LocalStack.
 
-## Phase 0 checklist (all done)
+## Phase 1 checklist (all done)
 
-### A. Finish the Docker install (all-users installation)
+### A. Auth (Better Auth)
 
-- [x] **Restarted Windows.** VirtualMachinePlatform and WSL enabled after reboot.
-- [x] Launched Docker Desktop, accepted agreement, skipped account sign-in, whale stopped animating.
-- [x] Settings → Resources → Advanced: CPUs **6**, Memory **3.5 GB**, Swap **2 GB**, Virtual disk **64 GB**.
-- [x] Settings → General: Start Docker Desktop on sign-in **on**, Resource Saver **off**.
-- [x] Settings → Docker Engine: added `"log-driver": "json-file"` with `"log-opts": { "max-size": "10m", "max-file": "3" }`, Applied & restarted.
-- [x] Verified in new terminal:
-  `docker info --format '{{.OSType}} cpus={{.NCPU}} mem={{.MemTotal}}'` → `linux cpus=8 mem=4026171392`
-  `docker compose version` → v5.7.0
+- [x] `modules/auth/auth.ts` + `middleware.ts`: email/password with email verification, password reset via Resend (HTTP), optional Google, Turnstile when secret set
+- [x] `profiles` and `credit_accounts` created on signup via database hooks; `SIGNUP_GRANT_CREDITS` forced to `0` in production
+- [x] Cross-site cookies in production (`sameSite: none`, `secure: true`); Better Auth mounted at `/api/auth` before JSON body parsing
 
-### B. Prove the stack locally
+### B. Credit ledger
 
-- [x] `pnpm install --frozen-lockfile` — succeeded.
-- [x] `pnpm infra:up` — postgres and redis containers started.
-- [x] `docker compose -f infra/docker-compose.dev.yml ps` → both `(healthy)`.
-- [x] `pnpm db:migrate` → `0000_init_core_schema` applied cleanly.
-- [x] `docker compose -f infra/docker-compose.dev.yml exec postgres psql -U app -d app -c '\dt'` → **18 tables**, no `asl_*` table.
-- [x] `pnpm dev` — running, API listening on port 8080.
-- [x] `curl -i http://localhost:8080/` → **200** with `x-request-id` header.
-- [x] `curl -i http://localhost:8080/healthz` → **200** `{"database":"ok","redis":"ok"}`.
-- [x] Opened <http://localhost:3000> → hello-world page rendered.
-- [x] `pnpm infra:down` → `/healthz` returned 503 with `{"database":"error","redis":"error"}`; `pnpm infra:up` again → back to 200.
-- [x] Ctrl-C `pnpm dev` → exited cleanly on first signal.
+- [x] `modules/credits/credits.ts`: ensure/get/spend/refund/grant/adjust/reconcile/calculateCredits
+- [x] Append-only ledger; one `spend` and at most one `refund` per job (unique indexes); account row locked `FOR UPDATE`; balance change + ledger row in the same transaction
+- [x] Tests: spend, refund, idempotency, insufficient credits, negative-adjustment guard, ledger reconciliation drift detection
 
-### C. Get CI running
+### C. Assets / object storage
 
-- [x] `git init -b main`, `git add -A`, committed. `.env` confirmed gitignored.
-- [x] Created GitHub repo `Emmaokpa/OpenArt-Alternative`, pushed `main`.
-- [x] Actions tab → install, lint, typecheck, test, build **all green**.
+- [x] `modules/assets/assets.ts` + `limits.ts`: presigned direct PUT, complete + validate (size/mime/duration), signed download, ffprobe when available
+- [x] `lib/storage.ts`: one S3 client for R2 (prod) and LocalStack S3 (local); streaming put/download, never buffers whole video
+- [x] `infra/docker-compose.dev.yml`: Postgres + Redis + LocalStack (S3-compatible) with bucket init
+- [x] Tests: presign/create asset, reject out-of-limit mime/size, complete only when object exists, enqueue probe
 
-### D. Coolify: database and cache
+### D. BullMQ queues + workers
 
-- [x] Coolify installed on Contabo VPS (`144.91.72.137:8000`), API token obtained.
-- [x] **Postgres 16** service: volume `/var/lib/postgresql/data`, **1.5 GB** memory, `shared_buffers=256MB`, `max_connections=50`, no public port.
-  Internal URL: `postgres://app:app@l8mokskplgoycxfumftymvaw:5432/app`
-- [x] **Redis 7** service: `--appendonly yes --maxmemory 512mb --maxmemory-policy noeviction`, **0.5 GB** limit, volume `/data`, no public port.
-  Internal URL: `redis://default:RXPYpGpNFuUs7uHcCi8aRxYw6nlFeRA3RAlBDO7xjpkh55NfYVkn5tDXF1cgPO1D@wb8citevq3ykdmkmyovy7wdv:6379/0`
+- [x] `queue/queues.ts`, `bull-board.ts`, `maintenance.ts`: `provider-jobs`, `media-jobs`, `maintenance`; sweep (requeue lost, fail stuck, expire assets, clean scratch), nightly ledger reconcile
+- [x] `worker-io.ts` (provider jobs, concurrency 10) and `worker-media.ts` (ffmpeg, concurrency 1); graceful shutdown
+- [x] bull-board admin router mounted behind `requireAdmin`
 
-### E. Coolify: the API
+### E. Resumable step runner
 
-- [x] Dockerfile app from GitHub repo. Build context = repo root, Dockerfile `apps/api/Dockerfile`, port **8080**, health check `/healthz`, memory **0.5 GB**, `NODE_OPTIONS=--max-old-space-size=384`.
-- [x] Environment: `NODE_ENV=production`, `PORT=8080`, `LOG_LEVEL=info`, `DATABASE_URL`, `REDIS_URL`, `CORS_ORIGINS=https://app-web.eokpa34.workers.dev`, `PROVIDER_MODE=fake`.
-- [x] Pre-deployment command: `pnpm --filter @app/api db:migrate:prod`.
-- [x] Deployed. `curl -i http://vtvlriappeqo5figm9hphkxx.144.91.72.137.sslip.io/healthz` → **200** `{"status":"ok","checks":{"database":"ok","redis":"ok"}}`.
-- [x] Stopped Redis → API detected dependency error (unhealthy → proxy 404/503 path); started Redis → back to **200**. Proves probe checks something real.
+- [x] `modules/jobs/runner.ts` + `pipelines.ts`: Redis `FOR UPDATE`-style job lock, provider `external_id` persisted immediately after submit, resume without resubmitting, retry/refund on failure
+- [x] Tests: happy path to success, crash-resume without double-submit, exactly-one-refund on repeated failure
 
-### F. Cloudflare: R2
+### F. Fake provider
 
-- [x] Created buckets `app-private`, `app-public`, `app-backups`.
-- [x] CORS on `app-private` and `app-public`: `GET`, `HEAD`, `PUT`, app origin, expose `ETag`, max age 3600.
-- [x] Lifecycle on `app-private`: abort incomplete multipart uploads after 1 day; expire `tmp/` after 1 day.
-- [x] Three API tokens (one per bucket, object read/write only) generated and saved locally. Never in repo.
-- [x] Open question 2 answered: **workers.dev** for hello-world (no custom domain yet).
+- [x] `providers/fake/fake.ts`: bundled `sample.mp4` (CC0 flower), generated `sample.png`, deterministic transcript fixture; external id encodes timestamp/fail/timeout/capability
+- [x] `FAKE_DELAY_MS`, `FAKE_FAIL_RATE`, `FAKE_TIMEOUT_RATE` for deterministic fail/timeout/hang testing
 
-### G. Cloudflare: the web Worker
+### G. Endpoints (v1)
 
-- [x] `opennextjs-cloudflare build` fails on Windows (`EPERM` on symlink) — used GitHub Actions on Linux instead (production path anyway).
-- [x] `wrangler login` completed via OAuth.
-- [x] Deployed via GitHub Actions CI deploy job: `https://app-web.eokpa34.workers.dev`.
-- [x] Worker URL loads the hello-world page.
-- [x] Added Worker origin to `CORS_ORIGINS` in Coolify, redeployed API, confirmed no CORS errors.
+- [x] `routes/v1/`: `/me`, `/models`, `/templates`, `/quotes`, `/jobs` (create/list/get/cancel/delete, idempotency), SSE progress polling every 1s, `/uploads` (presign/complete, 20/hour rate limit), `/assets` download, `/webhooks/providers/fake` (replay-deduped via `webhook_events`), `/admin` (credits + bull-board)
+- [x] `http/errors.ts`, `http/validate.ts`, `http/middleware.ts`, `http/rate-limit.ts`: uppercase error codes, Zod validation, fixed-window Redis rate limiter
+- [x] `routes/health.test.ts`: updated to expect `NOT_FOUND`
 
-### H. Close the phase
+### H. Minimal web pages (Phase 1, unstyled)
 
-- [x] `docker info` line: `linux cpus=8 mem=4026171392`
-- [x] Local `/healthz` 200 confirmed
-- [x] CI run URL: https://github.com/Emmaokpa/OpenArt-Alternative/actions (green)
-- [x] Live `/healthz` 200 plus recovery after Redis restart confirmed
-- [x] Worker URL: `https://app-web.eokpa34.workers.dev/` loads page
+- [x] `apps/web`: login, signup, forgot-password, reset-password, home (prompt box + live job progress), library; Better Auth client + API helper; `@app/shared` dependency added
+- [x] `next build` passes; all pages statically generated
+
+### I. Infra, CI, migrations, docs
+
+- [x] `apps/api/Dockerfile`: ffmpeg + fixtures + worker scripts
+- [x] `.github/workflows/ci.yml`: Postgres + Redis services, migrate step, `TEST_DATABASE_URL`
+- [x] `.env.example`: all Phase 1 variables
+- [x] `pnpm db:generate` → `0001_left_valkyrie.sql`; applied to local Postgres (18 tables)
+- [x] `pnpm seed`: plans, fake models, templates
+- [x] `package.json` `onlyBuiltDependencies`: `msgpackr-extract`
+- [x] `freebuff-plans/phase.md` synced with `docs/plans/phase.md` (client → Next.js UI decision); `ALL-PLANS-COMBINED.md` regenerated
+- [x] README.md updated for Phase 1
 
 ---
 
-## Phase 0 tasks (all ticked)
+## Phase 0 (reference — complete)
 
-- [x] Monorepo layout from `01` (`apps/api`, `apps/web`, `packages/shared`, `packages/config`, `infra`)
-- [x] TypeScript strict, ESLint (flat config), Prettier, shared config package
-- [x] `infra/docker-compose.dev.yml` with Postgres 16 and Redis 7 (AOF on, `noeviction`, memory limits)
-- [x] Zod-validated environment config (`apps/api/src/env.ts`)
-- [x] Drizzle setup + `0000_init_core_schema` migration (18 tables, no ASL tables)
-- [x] GitHub Actions CI: install, lint, typecheck, test, build (`.github/workflows/ci.yml`)
-- [x] Hello-world API with `/healthz` checking Postgres and Redis
-- [x] Deploy-time migration entrypoint (`dist/migrate.js`, run as a pre-deployment command)
-- [x] Hello-world Next.js app with OpenNext + `wrangler.jsonc` for Workers
-- [x] Coolify Postgres and Redis services (memory limits, volumes)
-- [x] Cloudflare R2 buckets, CORS, lifecycle, scoped tokens
-- [x] Deploy API to Coolify; `/healthz` live on the VPS
-- [x] Deploy web hello-world to `workers.dev`
-- [x] Run migrations against the production database (via pre-deployment command)
+See the collapsed Phase 0 section in git history. Highlights: monorepo layout, Postgres/Redis/MinIO→LocalStack docker-compose, Zod env, Drizzle + 18-table migration, CI, Coolify deploys, Cloudflare web Worker, R2 buckets.
 
 ---
 
@@ -104,17 +77,18 @@ Phase 0 is 100% complete. All code is complete and verified locally and in produ
 - `pnpm install --frozen-lockfile` — lockfile committed and reproducible.
 - `pnpm lint` — 4/4 packages clean.
 - `pnpm typecheck` — 5/5 tasks clean.
-- `pnpm test` — 11 tests passing.
-- `pnpm build` — shared, api, web all built successfully.
-- Migration applied to real Postgres: 18 tables, 33 indexes, constraints enforced.
-- API smoke test: `GET /` → 200, `GET /healthz` → 200 with live deps, 503 when deps down.
+- `pnpm test` — 42 tests passing across 9 files (credits, pricing, job create/idempotency/refund, crash-resume, webhook idempotency, upload limits, health, env).
+- `pnpm build` — shared, api, web all built successfully (Next.js pages: `/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/library`).
+- Migration applied to real Postgres: 18 tables, constraints enforced.
+- API smoke test with Docker deps: `GET /` → 200, `GET /v1/models` → 200, `GET /healthz` → 200 with live deps, 503 when deps down.
+
+**With Docker (Postgres + Redis + LocalStack):**
+- `pnpm infra:up` — all three containers healthy; LocalStack init creates `app-private`, `app-public`, `app-backups`.
+- Presign → PUT → HEAD → GET round-trip through the S3 client works against LocalStack.
 
 **Production (Coolify VPS + Cloudflare):**
-- Postgres 16 and Redis 7 running healthy on Coolify.
-- API deployed to Coolify, `/healthz` → **200** `{"status":"ok","checks":{"database":"ok","redis":"ok"}}`.
-- Web Worker deployed to `https://app-web.eokpa34.workers.dev/`.
-- CI green on GitHub Actions (including Linux build of Worker via OpenNext).
-- Production migrations ran via `dist/migrate.js` pre-deployment command.
+- Phase 0 deploys remain live (API `/healthz`, web Worker).
+- Phase 1 changes ready to deploy: new Dockerfile (ffmpeg), `dist/migrate.js` migrations, worker entrypoints.
 
 ---
 
@@ -123,34 +97,35 @@ Phase 0 is 100% complete. All code is complete and verified locally and in produ
 1. **Auth tables now, auth logic in Phase 1.** Four Better Auth tables declared in Drizzle as schema only.
 2. **`@app/shared` is a built package** (ESM + declarations) for runtime and Drizzle Kit resolution.
 3. **`/healthz` opens a one-shot Redis connection** per probe to avoid log floods.
-4. **Stack versions pinned:** pnpm 10.34.9, Node ≥ 24, TypeScript 6.0.3, Express 5.3.0, Drizzle 0.45.4, Zod 4.6.7, Next 16.4.6, OpenNext 1.20.17, wrangler 4.161.0.
+4. **Stack versions pinned:** pnpm 10.34.9, Node ≥ 24, TypeScript 6.0.3, Express 5.3.0, Drizzle 0.45.4, Zod 4.6.7, Next 16.4.6, OpenNext 1.20.17, wrangler 4.161.0, BullMQ 6.7.6, Better Auth 1.7.23, `@aws-sdk/*` 3.1169.0.
 5. **Drizzle over Prisma.**
-6. **No MinIO yet.** Local object storage arrives with presigning in Phase 1.
-7. **`apps/web` is hello-world only.** `client/` prototype untouched; Phase 3.
+6. **LocalStack (not MinIO)** for local S3-compatible storage; MinIO community images are no longer published. Same AWS SDK client targets R2 in production.
+7. **`apps/web` is the Next.js port target.** `client/` React prototype untouched; 100% structure copied when ported in Phase 3.
 8. **`.npmrc` retry settings** for unstable connection.
 9. **Migrations run from `dist/migrate.js`** as Coolify pre-deployment command.
+10. **Job deletion is soft-delete** (`jobs.deleted_at`) because `credit_ledger.job_id` must be retained.
 
 ---
 
 ## Open questions (resolved)
 
-1. **Deploy access:** ✅ Provided — Coolify API token + VPS SSH access + Cloudflare account all configured.
-2. **Domain:** ✅ `workers.dev` used for hello-world (`https://app-web.eokpa34.workers.dev/`). Custom domain can be added later.
-3. **pnpm 10 / Node 24 pinning:** ✅ Kept as-is (pnpm 10.34.9, Node 24 in CI, Node 26 locally).
-4. **Better Auth schema:** ✅ OK to regenerate `auth.ts` from Better Auth CLI in Phase 1.
-5. **Local object storage in Phase 1:** ✅ Decision deferred to Phase 1 (MinIO vs dev R2 bucket).
+1. **Deploy access:** ✅ Coolify API token + VPS SSH + Cloudflare account configured.
+2. **Domain:** ✅ `workers.dev` for web (`https://app-web.eokpa34.workers.dev/`). Custom domain later.
+3. **pnpm 10 / Node 24 pinning:** ✅ Kept (pnpm 10.34.9, Node 24 CI, Node 26 local).
+4. **Local object storage:** ✅ LocalStack S3-compatible; production uses R2 via the same SDK client.
+5. **`SIGNUP_GRANT_CREDITS`:** ✅ Default 0, forced 0 in production.
 
 ---
 
-## Known issues (resolved)
+## Known issues
 
-- Docker Desktop was not installed → ✅ Installed and configured on Windows.
-- `/healthz` only returned 503 locally → ✅ 200 confirmed with live Postgres + Redis.
-- Redis health path only verified against down Redis → ✅ 200 confirmed with live Redis; dependency failure path confirmed when Redis stopped.
-- `opennextjs-cloudflare build` fails on Windows → ✅ Built via GitHub Actions on Linux instead.
-- `/healthz` not deployed, Worker not deployed, migrations not run against production → ✅ All deployed and verified.
-- No git repository initialized → ✅ Initialized, pushed to GitHub, CI green.
+- `pnpm` warns about ignored build script `msgpackr-extract@3.0.7`; added to `onlyBuiltDependencies` (harmless).
+- Docker daemon not always running locally; Postgres/Redis-backed integration tests skip gracefully when Postgres is unreachable.
+- `ffmpeg`/`ffprobe` not installed locally; probe returns null and thumbnails are skipped gracefully. ffmpeg is in the API Dockerfile.
+- Web UI is intentionally unstyled/plain in Phase 1; design polish comes in Phase 3.
+- Real providers (fal.ai/AssemblyAI) and payments are Phase 2+; not built yet.
+- `99-asl-ON-HOLD.md` not opened; ASL deferred to Phase 8.
 
 ---
 
-**Phase 0 is complete. Ready to start Phase 1 (auth, ledger, uploads, queues, fake provider).**
+**Phase 1 is complete. Ready for the developer to confirm before starting Phase 2 (real generation tools).**

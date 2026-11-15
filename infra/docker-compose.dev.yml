@@ -51,6 +51,49 @@ services:
       retries: 10
     mem_limit: 512m
 
+  # S3-compatible object storage for development. R2 is the production target;
+  # MinIO's community images are no longer published, so LocalStack's S3
+  # service stands in. The AWS SDK code is identical for both.
+  localstack:
+    image: localstack/localstack:4.5
+    restart: unless-stopped
+    environment:
+      SERVICES: s3
+      PERSISTENCE: 0
+      DEBUG: 0
+    ports:
+      - "4566:4566"
+    volumes:
+      - localstack-data:/var/lib/localstack
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:4566/_localstack/health >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    mem_limit: 1g
+
+  # Creates the buckets once LocalStack is healthy. Idempotent, exits 0.
+  localstack-init:
+    image: localstack/localstack:4.5
+    depends_on:
+      localstack:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        awslocal s3 mb s3://app-private --endpoint-url http://localstack:4566 || true
+        awslocal s3 mb s3://app-public --endpoint-url http://localstack:4566 || true
+        awslocal s3 mb s3://app-backups --endpoint-url http://localstack:4566 || true
+        echo "buckets ready"
+    environment:
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+    restart: "no"
+    mem_limit: 256m
+
 volumes:
   postgres-data:
   redis-data:
+  localstack-data:

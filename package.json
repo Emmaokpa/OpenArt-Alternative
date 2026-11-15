@@ -18,6 +18,9 @@
     "db:generate": "pnpm --filter @app/api db:generate",
     "db:migrate": "pnpm --filter @app/api db:migrate",
     "db:studio": "pnpm --filter @app/api db:studio",
+    "seed": "pnpm --filter @app/api seed",
+    "worker:io": "pnpm --filter @app/api worker:io",
+    "worker:media": "pnpm --filter @app/api worker:media",
     "infra:up": "docker compose -f infra/docker-compose.dev.yml up -d",
     "infra:down": "docker compose -f infra/docker-compose.dev.yml down"
   },
@@ -30,5 +33,8 @@
     "turbo": "2.11.11",
     "typescript": "6.0.3",
     "typescript-eslint": "8.72.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["msgpackr-extract"]
   }
 }

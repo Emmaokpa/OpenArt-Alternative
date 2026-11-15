@@ -57,7 +57,7 @@ An AI video generator with a large prompt box, templates, and style examples. Us
 
 **Tasks**
 - Monorepo layout from `01`. TypeScript, ESLint, Prettier, shared config package.
-- `docker-compose.dev.yml` with Postgres and Redis (and MinIO if not using a dev R2 bucket).
+- `docker-compose.dev.yml` with Postgres, Redis and an S3-compatible dev bucket (LocalStack) if not using a dev R2 bucket.
 - Zod-validated environment config.
 - Drizzle setup and migrations for the core schema in `03` (no ASL tables).
 - GitHub Actions: install, lint, typecheck, test.
@@ -105,15 +105,18 @@ An AI video generator with a large prompt box, templates, and style examples. Us
 
 ### Phase 3 — Web app and design (2 weeks)
 
-**Read first:** `06-frontend-web.md`, `05-storage-and-cloudflare.md`
+**Read first:** `06-frontend-web.md`, `05-storage-and-cloudflare.md`, `freebuff-plans/important.md`
 
-**Goal:** the real interface.
+**Goal:** the real interface — the `client/` prototype ported to Next.js and wired to the API.
 
 **Tasks**
-- Design tokens and the component set from `06`.
-- Home page: prompt box, model and settings row, live credit cost, template grid.
+- **Port the `client/` prototype into `apps/web`** (React + Vite → Next.js App Router), following the mapping in `freebuff-plans/important.md`. Keep the layout and visual language; do not redesign from scratch and do not ship `client/` as a second app.
+- Design tokens and the component set from `06`, extracted from `client/src/index.css` and `client/src/components/ui.tsx`.
+- Home page: prompt box, model and settings row, live credit cost, template grid — as laid out in `client/src/App.tsx` and `client/src/components/Hero.tsx`.
 - `/create/video`, `/create/image`, template detail page, templates API and admin editor, previews from the public bucket.
 - Library polish (thumbnails, progress, retry, delete, download). Static pricing page.
+- Replace every hard-coded array in `client/src/data/content.ts` with API data (`/v1/models`, `/v1/templates`); keep only UI copy static.
+- Swap prototype branding (name, logo, copy, Pexels images) for our own assets before launch.
 - Accessibility pass (captions on videos, keyboard use, reduced motion) and responsive layouts.
 - Playwright smoke tests against the fake provider.
 
