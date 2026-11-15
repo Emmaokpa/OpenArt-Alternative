@@ -1,4 +1,4 @@
-﻿import { and, desc, eq, inArray, isNotNull, isNull, lt, ne, or } from "drizzle-orm";
+﻿import { and, desc, eq, gte, inArray, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
 import type {
   AssetKind,
   JobAssetView,
@@ -8,7 +8,7 @@ import type {
   JobView,
 } from "@app/shared";
 import type { Db } from "../../db/client.js";
-import { assets, jobs, jobSteps } from "../../db/schema/core.js";
+import { assets, creditLedger, jobs, jobSteps } from "../../db/schema/core.js";
 import {
   AppError,
   badRequest,
@@ -23,11 +23,15 @@ import { enqueueJobRun, type Queues } from "../../queue/queues.js";
 import {
   refundCredits,
   spendCredits,
-} from "../credits/credits.js";import { recordModeration, screenText } from "../moderation/moderation.js";
+} from "../credits/credits.js";
+import { recordModeration, screenText } from "../moderation/moderation.js";
 import { assertInputAssets } from "./input-assets.js";
 import { resolveQuote } from "./quote.js";
+import { calculateUnits } from "./pricing.js";
 import type { JobEnvelope } from "./schemas.js";
 import type { AssetRecord, JobRecord, JobStepRecord } from "./types.js";
+import type { Env } from "../../env.js";
+import type { PricingUnit } from "@app/shared";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -52,6 +56,7 @@ export interface CreateJobResult {
  * the original job without charging again.
  */
 export async function createJob(
+  env: Pick<Env, "DAILY_SPEND_CAP_USD_MICROS" | "MAX_CONCURRENT_JOBS_PER_USER">,
   db: Db,
   queues: Pick<Queues, "providerJobs">,
   logger: Logger,
@@ -82,6 +87,57 @@ export async function createJob(
   }
 
   await assertInputAssets(db, input.userId, input.envelope.type, quote.params);
+
+  // --- Phase 2 spend limits -------------------------------------------------
+  const dailyCap = env.DAILY_SPEND_CAP_USD_MICROS ?? 0;
+  const maxConcurrent = env.MAX_CONCURRENT_JOBS_PER_USER ?? 0;
+
+  if (dailyCap > 0 || maxConcurrent > 0) {
+    const creditValueUsdMicros = 8000; // $0.008 per credit
+    const unit = quote.model.unit as PricingUnit;
+    const units = calculateUnits(unit, quote.params);
+    const estimatedCostMicros = Math.round(quote.model.costUsdMicrosPerUnit * units);
+
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    if (dailyCap > 0) {
+      // Sum of today's spend (delta is negative for spend entries).
+      const [spendRow] = await db
+        .select({ total: sql<number>`coalesce(sum(${creditLedger.delta}), 0)` })
+        .from(creditLedger)
+        .where(
+          and(
+            eq(creditLedger.userId, input.userId),
+            eq(creditLedger.type, "spend"),
+            gte(creditLedger.createdAt, today),
+          ),
+        );
+
+      const todaySpendMicros = Math.abs(Number(spendRow?.total ?? 0)) * creditValueUsdMicros;
+      if (todaySpendMicros + estimatedCostMicros > dailyCap) {
+        throw new AppError(402, "INSUFFICIENT_CREDITS", "Daily spend cap exceeded");
+      }
+    }
+
+    if (maxConcurrent > 0) {
+      const rows = (await db
+        .select({ count: sql`count(*)::int` })
+        .from(jobs)
+        .where(
+          and(
+            eq(jobs.userId, input.userId),
+            isNull(jobs.deletedAt),
+            or(eq(jobs.status, "queued"), eq(jobs.status, "running")),
+          ),
+        )) as Array<{ count: number }>;
+
+      const count = rows[0]?.count ?? 0;
+      if (count >= maxConcurrent) {
+        throw new AppError(429, "RATE_LIMITED", "Too many concurrent jobs");
+      }
+    }
+  }
 
   let job: JobRecord;
   try {

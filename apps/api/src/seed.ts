@@ -89,6 +89,63 @@ async function main(): Promise<void> {
         minUnits: "1",
         maxUnits: "60",
       },
+
+      // --- fal.ai real providers (Phase 2) -----------------------------------
+      // Pricing from https://fal.ai/pricing (Nov 2026).
+      // Credit prices follow plan 07: credits = ceil(cost × 2.5 ÷ $0.008),
+      // rounded to match the plan's retail credit targets.
+      {
+        id: "flux-schnell",
+        label: "FLUX.1 [schnell]",
+        description: "Fast text-to-image model (~$0.003/megapixel).",
+        capability: "text_to_image",
+        provider: "fal",
+        providerModel: "fal-ai/flux/schnell",
+        unit: "image",
+        costUsdMicrosPerUnit: 3000,
+        creditsPerUnit: "2",
+        minUnits: "1",
+        maxUnits: "1",
+      },
+      {
+        id: "flux-dev",
+        label: "FLUX.1 [dev]",
+        description: "Quality text-to-image model (~$0.025/megapixel).",
+        capability: "text_to_image",
+        provider: "fal",
+        providerModel: "fal-ai/flux/dev",
+        unit: "image",
+        costUsdMicrosPerUnit: 25000,
+        creditsPerUnit: "8",
+        minUnits: "1",
+        maxUnits: "1",
+      },
+      {
+        id: "seedance-mini-text-video",
+        label: "Seedance 2.0 Mini (text-to-video)",
+        description: "Text to video (~$0.06/second).",
+        capability: "text_to_video",
+        provider: "fal",
+        providerModel: "bytedance/seedance-2.0/mini/text-to-video",
+        unit: "second",
+        costUsdMicrosPerUnit: 60000,
+        creditsPerUnit: "18",
+        minUnits: "1",
+        maxUnits: "30",
+      },
+      {
+        id: "seedance-mini-image-video",
+        label: "Seedance 2.0 Mini (image-to-video)",
+        description: "Image to video (~$0.06/second).",
+        capability: "image_to_video",
+        provider: "fal",
+        providerModel: "bytedance/seedance-2.0/mini/image-to-video",
+        unit: "second",
+        costUsdMicrosPerUnit: 60000,
+        creditsPerUnit: "18",
+        minUnits: "1",
+        maxUnits: "30",
+      },
     ];
 
     for (const model of modelRows) {

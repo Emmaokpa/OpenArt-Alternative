@@ -40,7 +40,15 @@ export function createApp({ env, logger, checks, healthTimeoutMs, api }: AppDepe
     app.all("/api/auth/{*any}", toNodeHandler(api.auth));
   }
 
-  app.use(express.json({ limit: "1mb" }));
+  app.use(
+    express.json({
+      limit: "1mb",
+      // Capture the raw body so webhook routes can verify provider signatures.
+      verify: (req: unknown, _res: unknown, buf: Buffer) => {
+        (req as { rawBody?: string }).rawBody = buf.toString("utf8");
+      },
+    }),
+  );
 
   app.get("/", (_req, res) => {
     res.json({ name: "api", version: API_VERSION });

@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { jobs } from "../../db/schema/index.js";
 import { isAppError } from "../../lib/errors.js";
-import { createTestModel, createTestUser, createQueueStub, testLogger } from "../../test-utils/fixtures.js";
+import { createTestModel, createTestUser, createQueueStub, testEnv, testLogger } from "../../test-utils/fixtures.js";
 import { openTestDatabase, resetDatabase, testDatabaseAvailable } from "../../test-utils/db.js";
 import { ensureCreditAccount, getBalance, grantCredits } from "../credits/credits.js";
 import { createJob } from "./service.js";
@@ -43,7 +43,7 @@ describe.skipIf(!available)("createJob", () => {
     const userId = await userWithCredits();
     const stub = createQueueStub();
 
-    const result = await createJob(db, stub.queues, testLogger, {
+    const result = await createJob(testEnv(), db, stub.queues, testLogger, {
       userId,
       idempotencyKey: "request-1",
       envelope: {
@@ -74,8 +74,8 @@ describe.skipIf(!available)("createJob", () => {
       },
     };
 
-    const first = await createJob(db, stub.queues, testLogger, input);
-    const replay = await createJob(db, stub.queues, testLogger, input);
+    const first = await createJob(testEnv(), db, stub.queues, testLogger, input);
+    const replay = await createJob(testEnv(), db, stub.queues, testLogger, input);
 
     expect(first.created).toBe(true);
     expect(replay.created).toBe(false);
@@ -89,7 +89,7 @@ describe.skipIf(!available)("createJob", () => {
     const stub = createQueueStub();
 
     await expect(
-      createJob(db, stub.queues, testLogger, {
+      createJob(testEnv(), db, stub.queues, testLogger, {
         userId,
         idempotencyKey: "request-1",
         envelope: {
@@ -112,7 +112,7 @@ describe.skipIf(!available)("createJob", () => {
     const stub = createQueueStub();
 
     await expect(
-      createJob(db, stub.queues, testLogger, {
+      createJob(testEnv(), db, stub.queues, testLogger, {
         userId,
         idempotencyKey: "request-1",
         envelope: {
@@ -132,7 +132,7 @@ describe.skipIf(!available)("createJob", () => {
     const stub = createQueueStub();
 
     await expect(
-      createJob(db, stub.queues, testLogger, {
+      createJob(testEnv(), db, stub.queues, testLogger, {
         userId,
         idempotencyKey: "  ",
         envelope: {

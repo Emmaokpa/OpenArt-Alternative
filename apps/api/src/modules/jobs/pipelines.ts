@@ -1,12 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { extname, join } from "node:path";
-import type { Capability, JobType } from "@app/shared";
+import type { Capability, JobType, PricingUnit } from "@app/shared";
 import { eq } from "drizzle-orm";
 import type { Db } from "../../db/client.js";
 import { assets } from "../../db/schema/core.js";
 import { transcriptToVtt, type Transcript } from "../../lib/captions.js";
 import { AppError } from "../../lib/errors.js";
+import { calculateUnits } from "../../modules/jobs/pricing.js";
 import { probeMedia, writeThumbnail } from "../../lib/ffmpeg.js";
 import { extensionForMime, outputKey } from "../../lib/object-keys.js";
 import { withScratch } from "../../lib/scratch.js";
@@ -114,9 +115,16 @@ async function submitStep(context: StepContext): Promise<StepResult> {
     throw new ProviderError("PROVIDER_ERROR", "The provider returned an empty job id", true);
   }
 
+  // Estimate the provider cost from the model's unit price and the job's
+  // billable units. Stored on the step so the runner can persist it when the
+  // step completes (actual cost is recorded per step in Phase 2).
+  const unit = context.model.unit as PricingUnit;
+  const units = calculateUnits(unit, context.job.params);
+  const costUsdMicros = Math.round(context.model.costUsdMicrosPerUnit * units);
+
   // The runner persists this id on the step before the worker returns, so a
   // restart resumes polling instead of submitting (and paying) again.
-  return { status: "done", externalId, output: { externalId } };
+  return { status: "done", externalId, output: { externalId }, costUsdMicros };
 }
 
 async function waitStep(context: StepContext): Promise<StepResult> {

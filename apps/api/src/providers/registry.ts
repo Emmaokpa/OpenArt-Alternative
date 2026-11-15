@@ -2,6 +2,7 @@ import type { Env } from "../env.js";
 import type { Logger } from "../logger.js";
 import type { ModelRecord } from "../modules/catalog/catalog.js";
 import { createFakeProvider } from "./fake/fake.js";
+import { createFalProvider } from "./fal/fal.js";
 import { ProviderError, type ProviderAdapter } from "./types.js";
 
 export interface ProviderRegistry {
@@ -14,7 +15,10 @@ export interface ProviderRegistry {
  * in here in Phases 2 and 4 without touching the pipeline.
  */
 export function createProviderRegistry(env: Env, logger: Logger): ProviderRegistry {
-  const adapters = new Map<string, ProviderAdapter>([["fake", createFakeProvider(env, logger)]]);
+  const adapters = new Map<string, ProviderAdapter>([
+    ["fake", createFakeProvider(env, logger)],
+    ["fal", createFalProvider(env, logger)],
+  ]);
 
   return {
     forModel(model) {

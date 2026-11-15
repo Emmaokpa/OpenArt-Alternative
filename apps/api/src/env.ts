@@ -81,6 +81,18 @@ export const envSchema = z
     FAKE_FAIL_RATE: z.coerce.number().min(0).max(1).default(0),
     FAKE_TIMEOUT_RATE: z.coerce.number().min(0).max(1).default(0),
 
+    // --- fal.ai (real provider) ---------------------------------------------
+    FAL_KEY: z.string().min(1).optional(),
+    FAL_BASE_URL: z.url().default("https://fal.run"),
+    // Optional shared secret for verifying fal.ai webhook signatures.
+    FAL_WEBHOOK_SECRET: z.string().min(1).optional(),
+
+    // --- Spend limits -------------------------------------------------------
+    // Global daily spend cap in micro-dollars. 0 = unlimited.
+    DAILY_SPEND_CAP_USD_MICROS: z.coerce.number().int().min(0).default(0),
+    // Max concurrent jobs per user. 0 = unlimited.
+    MAX_CONCURRENT_JOBS_PER_USER: z.coerce.number().int().min(0).default(0),
+
     // --- Job polling --------------------------------------------------------
     // A waiting job is re-enqueued with a delay instead of sleeping in a worker.
     JOB_POLL_INTERVAL_MS: z.coerce.number().int().min(10).max(60_000).default(3_000),
@@ -105,6 +117,12 @@ export const envSchema = z
       ["S3_ACCESS_KEY_ID", "S3_ACCESS_KEY_ID is required in production"],
       ["S3_SECRET_ACCESS_KEY", "S3_SECRET_ACCESS_KEY is required in production"],
     ];
+
+    // Real provider mode requires a fal.ai key.
+    if (env.PROVIDER_MODE === "real") {
+      required.push(["FAL_KEY", "FAL_KEY is required when PROVIDER_MODE=real"]);
+    }
+
     for (const [key, message] of required) {
       if (!env[key]) ctx.addIssue({ code: "custom", path: [key], message });
     }

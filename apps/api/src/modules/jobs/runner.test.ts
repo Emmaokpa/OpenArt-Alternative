@@ -85,7 +85,7 @@ async function fundedUser(modelId: string, type: "text_to_image" | "captions") {
       ? { inputAssetId: await createReadyAsset(db, { userId, kind: "video" }), durationS: 60, burnIn: false }
       : { prompt: "a lighthouse at dusk", size: "1024x1024" };
 
-  const created = await createJob(db, stub.queues, testLogger, {
+  const created = await createJob(testEnv(), db, stub.queues, testLogger, {
     userId,
     idempotencyKey: `job:${userId}`,
     envelope: { type, modelId, templateId: undefined, params },
@@ -204,7 +204,7 @@ describe.skipIf(!available)("job runner", () => {
       idempotencyKey: `test:${userId}`,
     });
     const stub = createQueueStub();
-    const created = await createJob(db, stub.queues, testLogger, {
+    const created = await createJob(testEnv(), db, stub.queues, testLogger, {
       userId,
       idempotencyKey: "job-1",
       envelope: {

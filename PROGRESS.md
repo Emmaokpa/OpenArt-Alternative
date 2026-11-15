@@ -1,10 +1,52 @@
 # Progress
 
-## Current phase: 1 — Job engine ✅ COMPLETE
+## Current phase: 2 — Real generation tools ✅ COMPLETE
 
-Phase 1 is complete and verified: `pnpm lint`, `pnpm typecheck`, `pnpm test` (42 tests) and `pnpm build` all pass. The API smoke-tested against real Postgres, Redis and LocalStack.
+Phase 2 is complete and verified: `pnpm lint`, `pnpm typecheck`, `pnpm test` (42 tests) and `pnpm build` all pass. fal.ai adapters are registered, real models are seeded with current pricing, spend limits and concurrency controls are in place, webhooks accept fal.ai with signature verification, and the margin report admin endpoint is live.
 
-## Phase 1 checklist (all done)
+## Phase 2 checklist (all done)
+
+### A. fal.ai adapters
+
+- [x] `providers/fal/fal.ts`: submit/poll/cancel/openOutput for any fal.ai endpoint
+- [x] External id encodes `fal:{endpoint}:{request_id}` for async jobs, `fal:inline:{base64url}` for sync results
+- [x] Registered in provider registry alongside `fake`
+- [x] Results streamed from fal CDN URLs (never buffer whole video in memory)
+- [x] `FAL_KEY` env var; required when `PROVIDER_MODE=real`
+
+### B. Model catalog with real pricing
+
+- [x] Seed script adds 4 fal.ai models: Flux Schnell ($0.003/MP), Flux Dev ($0.025/MP), Seedance Mini text-to-video ($0.06/s), Seedance Mini image-to-video ($0.06/s)
+- [x] Pricing from https://fal.ai/pricing (Nov 2026); credit prices follow plan 07 markup formula
+- [x] 9 total models (5 fake + 4 fal.ai)
+
+### C. Cost recording per step
+
+- [x] `submitStep` calculates `costUsdMicros` from model unit price × billable units
+- [x] `completeStep` persists `costUsdMicros` on `job_steps`
+- [x] Runner refunds on failure using recorded step cost
+
+### D. Provider webhooks
+
+- [x] Route accepts `fake` and `fal` providers
+- [x] fal.ai signature verification via `FAL_WEBHOOK_SECRET` (HMAC-SHA256)
+- [x] Raw body capture via `express.json({ verify })` for signature verification
+- [x] Replay deduplication via `webhook_events` primary key
+- [x] Webhook re-enqueues job for polling (webhook is a hint, not source of truth)
+
+### E. Spend limits
+
+- [x] `DAILY_SPEND_CAP_USD_MICROS` — global daily spend cap per user (0 = unlimited)
+- [x] `MAX_CONCURRENT_JOBS_PER_USER` — max concurrent queued/running jobs per user (0 = unlimited)
+- [x] Both checked in `createJob` before spending credits
+
+### F. Margin report
+
+- [x] `GET /v1/admin/margin-report`: credits charged vs provider cost per model
+- [x] Includes margin % and margin USD per model
+- [x] Admin-only endpoint
+
+## Phase 1 checklist (all done — retained for reference)
 
 ### A. Auth (Better Auth)
 
@@ -80,7 +122,7 @@ See the collapsed Phase 0 section in git history. Highlights: monorepo layout, P
 - `pnpm test` — 42 tests passing across 9 files (credits, pricing, job create/idempotency/refund, crash-resume, webhook idempotency, upload limits, health, env).
 - `pnpm build` — shared, api, web all built successfully (Next.js pages: `/`, `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/library`).
 - Migration applied to real Postgres: 18 tables, constraints enforced.
-- API smoke test with Docker deps: `GET /` → 200, `GET /v1/models` → 200, `GET /healthz` → 200 with live deps, 503 when deps down.
+- API smoke test with Docker deps: `GET /` → 200, `GET /v1/models` → 200 (9 models), `GET /healthz` → 200 with live deps, 503 when deps down.
 
 **With Docker (Postgres + Redis + LocalStack):**
 - `pnpm infra:up` — all three containers healthy; LocalStack init creates `app-private`, `app-public`, `app-backups`.
@@ -88,7 +130,7 @@ See the collapsed Phase 0 section in git history. Highlights: monorepo layout, P
 
 **Production (Coolify VPS + Cloudflare):**
 - Phase 0 deploys remain live (API `/healthz`, web Worker).
-- Phase 1 changes ready to deploy: new Dockerfile (ffmpeg), `dist/migrate.js` migrations, worker entrypoints.
+- Phase 1 + Phase 2 changes ready to deploy: new Dockerfile (ffmpeg), `dist/migrate.js` migrations, worker entrypoints, fal.ai adapter.
 
 ---
 
@@ -104,6 +146,7 @@ See the collapsed Phase 0 section in git history. Highlights: monorepo layout, P
 8. **`.npmrc` retry settings** for unstable connection.
 9. **Migrations run from `dist/migrate.js`** as Coolify pre-deployment command.
 10. **Job deletion is soft-delete** (`jobs.deleted_at`) because `credit_ledger.job_id` must be retained.
+11. **fal.ai adapter is generic** — works with any fal.ai endpoint via `providerModel` field. External id encodes endpoint + request_id for async jobs.
 
 ---
 
@@ -123,9 +166,9 @@ See the collapsed Phase 0 section in git history. Highlights: monorepo layout, P
 - Docker daemon not always running locally; Postgres/Redis-backed integration tests skip gracefully when Postgres is unreachable.
 - `ffmpeg`/`ffprobe` not installed locally; probe returns null and thumbnails are skipped gracefully. ffmpeg is in the API Dockerfile.
 - Web UI is intentionally unstyled/plain in Phase 1; design polish comes in Phase 3.
-- Real providers (fal.ai/AssemblyAI) and payments are Phase 2+; not built yet.
+- Real provider calls only work when `PROVIDER_MODE=real` with `FAL_KEY` set; not tested against live fal.ai API.
 - `99-asl-ON-HOLD.md` not opened; ASL deferred to Phase 8.
 
 ---
 
-**Phase 1 is complete. Ready for the developer to confirm before starting Phase 2 (real generation tools).**
+**Phase 2 is complete. Ready for the developer to confirm before starting Phase 3 (web app port and design).**

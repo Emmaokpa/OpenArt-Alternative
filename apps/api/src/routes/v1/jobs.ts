@@ -51,7 +51,7 @@ export function jobsRouter(ctx: ApiContext): Router {
         throw badRequest("The Idempotency-Key header is required when creating a job");
       }
 
-      const result = await createJob(ctx.db, ctx.queues, ctx.logger, {
+      const result = await createJob(ctx.env, ctx.db, ctx.queues, ctx.logger, {
         userId: user.id,
         envelope: req.body as JobEnvelope,
         idempotencyKey,

@@ -101,7 +101,7 @@ describe.skipIf(!available)("provider webhooks", () => {
   it("rejects an unknown provider", async () => {
     const app = buildApp(createQueueStub());
     const response = await request(app)
-      .post("/v1/webhooks/providers/fal")
+      .post("/v1/webhooks/providers/unknown-provider")
       .send({ externalId: "x", status: "succeeded" });
 
     expect(response.status).toBe(404);
@@ -121,7 +121,7 @@ describe.skipIf(!available)("provider webhooks", () => {
     const events = await db
       .select()
       .from(webhookEvents)
-      .where(eq(webhookEvents.eventId, "fake-external-2:failed"));
+      .where(eq(webhookEvents.eventId, "fake:fake-external-2:failed"));
     expect(events).toHaveLength(1);
   });
 });
