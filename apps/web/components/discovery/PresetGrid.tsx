@@ -1,15 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { Heart, Play } from "lucide-react";
 import { presets } from "@/data/content";
 import type { PresetItem } from "@/data/content";
 import { SectionHeader } from "@/components/ui";
 
-function PresetTile({ item, index }: { item: PresetItem; index: number }) {
-  const likes = [12.4, 8.9, 21.3, 5.6, 17.2, 9.8, 33.1, 4.7, 11.5, 6.3][index % 10];
+function PresetTile({ item }: { item: PresetItem }) {
+  const likes = [12.4, 8.9, 21.3, 5.6, 17.2, 9.8, 33.1, 4.7, 11.5, 6.3][Math.floor(Math.random() * 10)];
 
   return (
-    <button
+    <Link
+      key={item.id}
+      href={{
+        pathname: "/create/video",
+        query: { model: item.model, prompt: item.title },
+      }}
       className="group relative w-full overflow-hidden rounded-2xl bg-[#141515] text-left ring-1 ring-white/[0.06] transition-all duration-300 hover:ring-white/25"
       style={{ aspectRatio: item.aspect }}
     >
@@ -39,7 +45,7 @@ function PresetTile({ item, index }: { item: PresetItem; index: number }) {
           {item.model}
         </span>
       </span>
-    </button>
+    </Link>
   );
 }
 
@@ -58,11 +64,7 @@ export function PresetGrid({ items = presets }: { items?: PresetItem[] }) {
           {columns.map((col, i) => (
             <div key={i} className="flex flex-col gap-2">
               {col.map((item) => (
-                <PresetTile
-                  key={item.id}
-                  item={item}
-                  index={items.findIndex((p) => p.id === item.id)}
-                />
+                <PresetTile key={item.id} item={item} />
               ))}
             </div>
           ))}

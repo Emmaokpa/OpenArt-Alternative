@@ -1,8 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowLeft, Mail, MailCheck } from "lucide-react";
 import { useState } from "react";
-import { authClient } from "../../lib/auth-client";
+import { AuthShell } from "@/components/auth/AuthShell";
+import {
+  AuthAlert,
+  AuthCard,
+  AuthField,
+  SubmitButton,
+} from "@/components/auth/AuthForm";
+import { authClient } from "@/lib/auth-client";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -11,20 +19,43 @@ export default function ForgotPasswordPage() {
   const [busy, setBusy] = useState(false);
 
   return (
-    <section style={{ maxWidth: 420 }}>
-      <h1 style={{ fontSize: "1.5rem" }}>Reset your password</h1>
-
+    <AuthShell>
       {sent ? (
-        <p style={{ color: "#b9b9c6", lineHeight: 1.6 }}>
-          If <strong>{email}</strong> has an account, a reset link is on its way. Check the API
-          logs in local development.
-        </p>
+        <AuthCard
+          title="Check your inbox"
+          subtitle={
+            <>
+              If <span className="font-medium text-white">{email}</span> has an account, a reset
+              link is on its way.
+            </>
+          }
+        >
+          <div className="flex flex-col items-center pt-1 text-center">
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-lime/25 bg-lime/[0.07]">
+              <span
+                aria-hidden="true"
+                className="animate-halo absolute inset-0 rounded-2xl bg-lime/20 blur-xl"
+              />
+              <MailCheck className="relative h-7 w-7 text-lime" strokeWidth={1.8} />
+            </div>
+            <p className="mt-4 text-[13.5px] leading-[21px] text-[rgba(214,225,255,0.6)]">
+              The link expires in one hour. Check the API logs when running locally.
+            </p>
+            <Link
+              href="/login"
+              className="mt-5 flex h-11 w-full items-center justify-center rounded-xl border border-white/[0.09] bg-white/[0.04] text-[13.5px] font-semibold text-white transition hover:bg-white/[0.08]"
+            >
+              Back to sign in
+            </Link>
+          </div>
+        </AuthCard>
       ) : (
-        <>
-          <p style={{ color: "#b9b9c6", lineHeight: 1.6 }}>
-            Enter your email and we will send a reset link.
-          </p>
+        <AuthCard
+          title="Reset your password"
+          subtitle="Enter the email tied to your studio and we'll send a secure link."
+        >
           <form
+            className="flex flex-col gap-3.5"
             onSubmit={async (event) => {
               event.preventDefault();
               setBusy(true);
@@ -42,52 +73,37 @@ export default function ForgotPasswordPage() {
               }
               setSent(true);
             }}
-            style={{ display: "grid", gap: "0.85rem", marginTop: "1.5rem" }}
           >
-            <label style={{ display: "grid", gap: "0.35rem" }}>
-              Email
-              <input
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                style={inputStyle}
-              />
-            </label>
+            <AuthField
+              id="reset-email"
+              label="Email"
+              type="email"
+              icon={Mail}
+              value={email}
+              onChange={setEmail}
+              placeholder="you@example.com"
+              autoComplete="email"
+            />
 
-            {error ? <p style={{ color: "#ff8b8b", margin: 0 }}>{error}</p> : null}
+            {error ? <AuthAlert>{error}</AuthAlert> : null}
 
-            <button type="submit" disabled={busy} style={buttonStyle}>
-              {busy ? "Sending…" : "Send reset link"}
-            </button>
+            <SubmitButton busy={busy} busyLabel="Sending link…">
+              Send reset link
+            </SubmitButton>
           </form>
-        </>
-      )}
 
-      <p style={{ marginTop: "1.25rem" }}>
-        <Link href="/login" style={{ color: "#7cc4ff" }}>
-          Back to sign in
-        </Link>
-      </p>
-    </section>
+          <Link
+            href="/login"
+            className="group mt-4 flex items-center justify-center gap-1.5 text-[12.5px] font-medium text-white/40 transition hover:text-white"
+          >
+            <ArrowLeft
+              className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-x-0.5"
+              strokeWidth={2.2}
+            />
+            Back to sign in
+          </Link>
+        </AuthCard>
+      )}
+    </AuthShell>
   );
 }
-
-const inputStyle = {
-  background: "#15151c",
-  border: "1px solid #2c2c36",
-  borderRadius: 6,
-  color: "#f5f5f7",
-  padding: "0.55rem 0.7rem",
-} as const;
-
-const buttonStyle = {
-  background: "#3b6cf6",
-  border: "none",
-  borderRadius: 6,
-  color: "#fff",
-  padding: "0.65rem 0.9rem",
-  cursor: "pointer",
-  fontWeight: 600,
-} as const;

@@ -2,13 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { AppShell } from "@/components/shell/AppShell";
+import { Footer } from "@/components/shell/Footer";
 import type { JobView } from "@app/shared";
-import { ApiError, apiFetch, formatCredits } from "../../lib/api";
+import { ApiError, apiFetch } from "@/lib/api";
 
 export default function LibraryPage() {
+  const { user, isLoading } = useAuth();
   const [jobs, setJobs] = useState<JobView[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [signedOut, setSignedOut] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -22,7 +25,7 @@ export default function LibraryPage() {
       } catch (loadError) {
         if (cancelled) return;
         if (loadError instanceof ApiError && loadError.status === 401) {
-          setSignedOut(true);
+          window.location.href = "/login";
         } else {
           setError(loadError instanceof Error ? loadError.message : "Could not load your library");
         }
@@ -34,78 +37,102 @@ export default function LibraryPage() {
     };
   }, []);
 
-  if (signedOut) {
+  if (isLoading) {
     return (
-      <section>
-        <h1 style={{ fontSize: "1.6rem" }}>Your library</h1>
-        <p style={{ color: "#b9b9c6" }}>
-          <Link href="/login" style={{ color: "#7cc4ff" }}>
-            Sign in
-          </Link>{" "}
-          to see your creations.
-        </p>
-      </section>
+      <div className="min-h-screen flex items-center justify-center bg-page text-white">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-lime" />
+      </div>
     );
   }
 
-  if (error) return <p style={{ color: "#ff8b8b" }}>{error}</p>;
-  if (!jobs) return <p style={{ color: "#8b8b99" }}>Loading…</p>;
+  if (!user) {
+    return (
+      <AppShell active="library">
+        <div className="max-w-md text-center py-20">
+          <h1 className="text-2xl font-bold text-white mb-4">Library</h1>
+          <p className="text-white/60 mb-6">Please sign in to view your creations.</p>
+          <Link href="/login" className="bg-lime text-black px-6 py-3 rounded-xl font-bold hover:bg-lime/90 transition block">
+            Sign in
+          </Link>
+        </div>
+        <Footer />
+      </AppShell>
+    );
+  }
+
+  if (error) return <p className="text-center text-[13px] text-red-400 mt-20">{error}</p>;
+  if (!jobs) return <p className="text-center text-[13px] text-white/60 mt-20">Loading…</p>;
 
   return (
-    <section>
-      <header style={{ display: "flex", alignItems: "baseline", gap: "1rem" }}>
-        <h1 style={{ fontSize: "1.8rem", marginBottom: 0 }}>Your library</h1>
-        <Link href="/" style={{ marginLeft: "auto", color: "#7cc4ff" }}>
+    <AppShell active="library">
+      <header className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-white">Your Library</h1>
+        <Link href="/" className="text-[12px] font-medium text-white/70 hover:text-white">
           New video
         </Link>
       </header>
 
       {jobs.length === 0 ? (
-        <p style={{ color: "#b9b9c6", marginTop: "1.5rem" }}>
-          Nothing here yet. <Link href="/" style={{ color: "#7cc4ff" }}>Make your first video</Link>.
+        <p className="text-white/60 mt-10 text-center">
+          Nothing here yet. <Link href="/" className="text-lime font-medium">Make your first video</Link>.
         </p>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: "1rem", marginTop: "1.5rem" }}>
+        <ul className="list-none p-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
           {jobs.map((job) => {
-            const output = job.assets?.find((asset) => asset.role === "output");
+            const output = job.assets?.find((asset) => asset.role === "output" && asset.kind === "video");
             const thumbnail = job.assets?.find((asset) => asset.role === "thumbnail");
 
             return (
-              <li
-                key={job.id}
-                style={{ border: "1px solid #23232c", borderRadius: 10, padding: "0.9rem 1rem" }}
-              >
-                <div style={{ display: "flex", gap: "0.75rem", alignItems: "baseline" }}>
-                  <strong style={{ textTransform: "capitalize" }}>{job.status}</strong>
-                  <span style={{ color: "#8b8b99" }}>
-                    {job.type.replaceAll("_", " ")} · {formatCredits(job.creditCost)} ·{" "}
-                    {new Date(job.createdAt).toLocaleString()}
-                  </span>
-                  <span style={{ marginLeft: "auto", color: "#8b8b99" }}>{job.progress}%</span>
+              <li key={job.id} className="rounded-xl border border-white/[0.08] bg-panel p-4">
+                <div className="flex gap-2 items-center justify-between mb-3">
+                  <span className="text-xs font-semibold text-white capitalize">{job.status}</span>
+                  <span className="text-xs text-white/60">{job.progress}%</span>
                 </div>
 
-                <p style={{ color: "#b9b9c6", margin: "0.5rem 0 0" }}>
+                <p className="text-[12px] text-white/60 line-clamp-2 mb-3">
                   {typeof job.params.prompt === "string" ? job.params.prompt : "(no prompt)"}
                 </p>
 
                 {job.errorMessage ? (
-                  <p style={{ color: "#ff8b8b", margin: "0.5rem 0 0" }}>{job.errorMessage}</p>
+                  <p className="text-[12px] text-red-400 mb-3">{job.errorMessage}</p>
                 ) : null}
 
                 {output?.downloadUrl ? (
-                  <video
-                    controls
-                    preload="metadata"
-                    poster={thumbnail?.downloadUrl}
-                    src={output.downloadUrl}
-                    style={{ width: "100%", maxWidth: 480, marginTop: "0.75rem", borderRadius: 8 }}
-                  />
+                  <div className="relative aspect-video rounded-lg bg-[#141414] overflow-hidden mb-3">
+                    <video
+                      controls
+                      preload="metadata"
+                      poster={thumbnail?.downloadUrl}
+                      src={output.downloadUrl}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 hover:bg-black/60 transition group-hover:opacity-0 group-hover:pointer-events-none opacity-0">
+                      <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black">
+                        <Play className="ml-0.5 h-5 w-5 text-white" fill="currentColor" />
+                      </button>
+                    </div>
+                  </div>
                 ) : null}
+
+                <div className="flex justify-between items-center pt-2">
+                  <Link
+                    href={`/library/${job.id}`}
+                    className="text-[12px] font-medium text-lime hover:text-lime/90"
+                  >
+                    View details
+                  </Link>
+                  <span className="text-[11px] text-white/50">
+                    {new Date(job.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
               </li>
             );
           })}
         </ul>
       )}
-    </section>
+      <Footer />
+    </AppShell>
   );
 }
+
+import { Play } from "lucide-react";

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import { AuthWrapper } from "@/components/auth/AuthProvider";
 
 export const metadata: Metadata = {
   title: "OpenArt — AI Video Generator",
@@ -23,7 +24,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="min-h-screen bg-page text-white font-sans antialiased selection:bg-lime selection:text-black">
-        {children}
+        <AuthWrapper>{children}</AuthWrapper>
       </body>
     </html>
   );

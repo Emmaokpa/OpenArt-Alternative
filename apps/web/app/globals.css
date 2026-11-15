@@ -38,6 +38,23 @@ textarea {
   field-sizing: content;
 }
 
+/* Chrome paints autofilled fields white; keep them on-theme. The inset
+   shadow is the only reliable override of the UA autofill background. */
+input[data-auth-input]:-webkit-autofill,
+input[data-auth-input]:-webkit-autofill:hover {
+  -webkit-text-fill-color: #f2f5ff;
+  caret-color: #f2f5ff;
+  box-shadow: 0 0 0 1000px #0c0e0d inset;
+}
+
+input[data-auth-input]:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f2f5ff;
+  caret-color: #f2f5ff;
+  box-shadow:
+    0 0 0 1000px #0b0d0c inset,
+    0 0 0 3px rgba(170, 255, 0, 0.09);
+}
+
 /* Hide scrollbars but keep scrolling */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
@@ -179,6 +196,43 @@ textarea {
   opacity: 0.7;
   animation: prompt-angle 4s linear infinite;
   pointer-events: none;
+}
+
+/* Auth artwork: slow ken-burns drift on the mosaic tiles */
+@keyframes ken-burns {
+  0%,
+  100% {
+    transform: scale(1.05) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.13) translate3d(0, -1.6%, 0);
+  }
+}
+.animate-ken-burns {
+  animation: ken-burns 26s ease-in-out infinite;
+}
+
+/* Auth success icon: soft breathing halo */
+@keyframes halo-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.06);
+  }
+}
+.animate-halo {
+  animation: halo-breathe 3.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-ken-burns,
+  .animate-halo {
+    animation: none;
+  }
 }
 
 /* Bottom fade used by the preset masonry, like OpenArt */

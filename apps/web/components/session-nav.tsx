@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { authClient } from "../lib/auth-client";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export function SessionNav() {
   const router = useRouter();
-  const { data: session, isPending } = authClient.useSession();
+  const { user, isLoading, signOut } = useAuth();
+
+  if (isLoading) return null;
 
   return (
     <nav
@@ -28,24 +30,18 @@ export function SessionNav() {
       </Link>
 
       <span style={{ marginLeft: "auto", color: "#8b8b99", fontSize: "0.9rem" }}>
-        {isPending
-          ? "Checking session…"
-          : session
-            ? session.user.email
-            : null}
+        {user ? user.email : null}
       </span>
 
-      {!isPending && !session ? (
+      {!user ? (
         <Link href="/login" style={{ color: "#7cc4ff", textDecoration: "none" }}>
           Sign in
         </Link>
-      ) : null}
-
-      {!isPending && session ? (
+      ) : (
         <button
           type="button"
           onClick={async () => {
-            await authClient.signOut();
+            await signOut();
             router.push("/login");
             router.refresh();
           }}
@@ -60,7 +56,7 @@ export function SessionNav() {
         >
           Sign out
         </button>
-      ) : null}
+      )}
     </nav>
   );
 }
