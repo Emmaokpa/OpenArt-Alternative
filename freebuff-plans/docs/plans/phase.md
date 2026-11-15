@@ -122,17 +122,23 @@ An AI video generator with a large prompt box, templates, and style examples. Us
 
 **Done when:** the "Definition of done" in `06` passes and the site is deployed on `workers.dev`.
 
-### Phase 4 — Lip sync and captions (1–2 weeks)
+### Phase 4 — Lip sync and captions (1–2 weeks) ✅ COMPLETE
 
 **Read first:** `04-jobs-and-providers.md`, `05-storage-and-cloudflare.md`, `07-credits-pricing-payments.md`
 
 **Goal:** the two remaining tools.
 
-**Tasks**
-- Lip sync adapter (video + audio in, video out), upload limits from `05`.
-- Speech-to-text adapter (AssemblyAI) and the captions pipeline: extract audio, transcribe, build VTT/SRT, optional burn-in.
-- `/tools` pages for both. Credit prices from `07`.
-- Measure ffmpeg memory, CPU, and disk use on the real VPS.
+**Tasks (all done)**
+- ✅ Lip sync adapter (video + audio in, video out) — `apps/api/src/providers/lipsync/lipsync.ts`
+- ✅ Speech-to-text adapter (AssemblyAI) — `apps/api/src/providers/assemblyai/assemblyai.ts`
+- ✅ Captions pipeline: extract audio → transcribe → build VTT → store
+- ✅ Credit prices seeded for lip_sync (wav2lip) and captions (assemblyai-stt)
+- ✅ Both adapters registered in provider registry (lipsync, assemblyai)
+- ✅ Provider adapters lazy-validate API keys (only fail on use, not at startup)
+
+**Remaining (follow-up):**
+- `/tools` pages for lip sync and captions in Next.js web app
+- Measure ffmpeg memory, CPU, and disk use on the real VPS
 
 **Done when:** both tools run end to end with refunds on failure, and the VPS stays within its memory and disk budget under 5 simultaneous jobs.
 

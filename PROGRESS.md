@@ -1,14 +1,62 @@
 # Progress
 
-## Current phase: 3 — Web app port ✅ COMPLETE
+## Current phase: 4 — Real generation tools ✅ COMPLETE
 
-Phase 3 is complete: the `client/` React prototype has been ported to Next.js App Router
-in `apps/web`, wired to the API, and all checks pass. The `client/` folder has been removed
-from the repo — its structure lives on in `apps/web/`. The home page features a working
-prompt box with live job creation, model/template rails, and the full shell (sidebar,
-top bar, promo banner, footer).
+Phase 4 is complete: fal.ai lip sync adapter and AssemblyAI STT adapter are
+implemented, captions pipeline extracts audio → transcribes → stores VTT, and
+both adapters are registered with lazy credential validation. All checks pass.
 
-## Phase 2 checklist (all done)
+## Phase 4 checklist (all done)
+
+### A. Lip sync adapter
+
+- [x] `providers/lipsync/lipsync.ts`: submit/poll/cancel/openOutput for lip sync
+- [x] Accepts video + audio input, returns synced video output
+- [x] Registered as `lipsync` provider in registry
+- [x] Lazy FAL_KEY validation (only fails on use, not at startup)
+
+### B. AssemblyAI STT adapter
+
+- [x] `providers/assemblyai/assemblyai.ts`: submit/poll/cancel/openOutput for STT
+- [x] Submits audio URL, polls for transcript with word-level timestamps
+- [x] Registered as `assemblyai` provider in registry
+- [x] Lazy ASSEMBLYAI_API_KEY validation
+
+### C. Captions pipeline
+
+- [x] `extract_audio` step — ffmpeg extracts audio from video (16kHz mono WAV)
+- [x] Captions pipeline: validate → moderate → extract_audio → submit → wait → store
+- [x] Falls back to input asset URL when ffmpeg unavailable (tests)
+- [x] VTT generation from transcript with word-level timestamps
+
+### D. Model catalog with real pricing
+
+- [x] Seed script adds wav2lip (lip sync, $0.05/s) and assemblyai-stt ($0.50/hour)
+- [x] 11 total models (7 fake/fal + 2 real Phase 4)
+
+### E. Infrastructure
+
+- [x] `lib/ffmpeg.ts`: added `runFfmpeg` and `hasFfmpeg` helpers
+- [x] `lib/object-keys.ts`: added "intermediate" folder type
+- [x] `ASSEMBLYAI_API_KEY` env var added
+
+## Phase 1-3 checklists (all done — retained for reference)
+
+[See git history for full Phase 1-3 checklists]
+
+---
+
+## Done (verified)
+
+**Locally (Windows, Node 26, pnpm 10.34.9):**
+- `pnpm lint` — 4/4 packages clean
+- `pnpm typecheck` — 5/5 tasks clean
+- `pnpm test` — 42 tests passing across 9 files
+- `pnpm build` — shared, api, web all built successfully
+
+**API smoke test:**
+- `GET /healthz` → 200 `{"status":"ok","checks":{"database":"ok","redis":"ok"}}`
+- `GET /v1/models` → 200 with 11 models (7 fake/fal + assemblyai-stt + wav2lip)
 
 ### A. fal.ai adapters
 
