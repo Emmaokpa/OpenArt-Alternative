@@ -8,19 +8,24 @@ export interface PromoBannerProps {
 
 export function PromoBanner({ onClose }: PromoBannerProps) {
   return (
-    <div className="shimmer relative flex h-9 w-full shrink-0 items-center justify-center overflow-hidden bg-[linear-gradient(90deg,#061f12_0%,#0f4a2a_35%,#13603a_50%,#0f4a2a_65%,#061f12_100%)] px-10 text-[12px] text-white/90">
-      <p className="truncate font-medium">
-        Limited Time: Up to 50% off for you on GPT Image 2.6, Seedream 5.5, Kling 4.0, and Recraft V4.1
+    <div className="relative flex h-[52px] w-full shrink-0 items-center justify-center gap-3 overflow-hidden bg-[linear-gradient(90deg,#0a0b0b_0%,#111312_45%,#131615_55%,#0a0b0b_100%)] px-12">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_120%_at_50%_0%,rgba(170,255,0,0.08),transparent_70%)]" />
+      <p className="truncate text-[13px] font-normal leading-5 text-white/85">
+        <span className="hidden lg:inline">
+          Limited Time: Up to 50% off for you on GPT Image 2.6, Seedream 5.5,
+          Kling 4.0, and Recraft V4.1
+        </span>
+        <span className="lg:hidden">Limited Time: Up to 50% off</span>
       </p>
-      <button className="ml-3 shrink-0 rounded-[5px] bg-lime px-2 py-[3px] text-[11px] font-semibold text-black transition hover:brightness-110">
-        Upgrade Now
+      <button className="shrink-0 cursor-pointer rounded-[4px_12px] bg-lime px-[10px] py-[5px] text-[12px] font-extrabold leading-[17px] text-[#111113] transition hover:brightness-105 active:opacity-85">
+        Upgrade now
       </button>
       <button
         onClick={onClose}
-        className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-white/60 transition hover:bg-white/10 hover:text-white"
+        className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-white/50 transition hover:bg-white/10 hover:text-white"
         aria-label="Dismiss banner"
       >
-        <X className="h-3.5 w-3.5" />
+        <X className="h-4 w-4" strokeWidth={2} />
       </button>
     </div>
   );

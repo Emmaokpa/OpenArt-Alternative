@@ -1,65 +1,88 @@
 "use client";
 
-import { Bell, ChevronDown, Gem, HelpCircle, Menu, ShoppingBag } from "lucide-react";
+import {
+  ChevronDown,
+  Download,
+  Gift,
+  HelpCircle,
+  Menu,
+  ShoppingBag,
+} from "lucide-react";
 import { Avatar } from "@/components/ui";
 
 export interface TopBarProps {
   onMenu: () => void;
 }
 
+function TopLink({ children }: { children: React.ReactNode }) {
+  return (
+    <button className="hidden h-8 items-center rounded-full px-2.5 text-[12.5px] font-normal text-[#b0b4ba] transition hover:bg-white/[0.06] hover:text-white lg:flex">
+      {children}
+    </button>
+  );
+}
+
 export function TopBar({ onMenu }: TopBarProps) {
   return (
-    <header className="sticky top-0 z-30 flex h-12 items-center justify-between bg-[linear-gradient(to_bottom,rgba(10,10,10,0.92),rgba(10,10,10,0.55))] px-3 backdrop-blur-md sm:px-4">
-      <div className="flex items-center gap-2">
+    <header className="sticky top-0 z-30 flex h-[52px] w-full items-center justify-between gap-3 bg-[linear-gradient(to_bottom,rgba(9,10,10,0.98)_0%,rgba(9,10,10,0.94)_78%,rgba(9,10,10,0.55)_100%)] px-3 backdrop-blur-xl sm:px-4">
+      <div className="flex min-w-0 items-center gap-1.5">
         <button
           onClick={onMenu}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/[0.06] hover:text-white lg:hidden"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/70 transition hover:bg-white/[0.06] hover:text-white lg:hidden"
           aria-label="Open menu"
         >
           <Menu className="h-4 w-4" />
         </button>
-        <button className="flex h-8 items-center gap-2 rounded-lg px-2 text-[12px] font-medium text-white/85 transition hover:bg-white/[0.06] hover:text-white">
-          <Avatar className="h-4 w-4" />
-          <span className="hidden truncate sm:inline">Emmanuel Okpa's workspace</span>
-          <span className="sm:hidden">Workspace</span>
-          <ChevronDown className="h-3.5 w-3.5 text-white/50" />
+        <button className="flex min-w-0 items-center gap-2 rounded-full py-1 pl-1 pr-2 text-[12.5px] font-medium text-white/90 transition hover:bg-white/[0.06]">
+          <Avatar className="h-6 w-6" />
+          <span className="hidden truncate sm:inline">Emmanuel Okpa&apos;s workspace</span>
+          <span className="truncate sm:hidden">Workspace</span>
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-white/45" strokeWidth={2.2} />
         </button>
       </div>
 
-      <div className="flex items-center gap-1 sm:gap-2">
-        <button className="hidden h-8 items-center gap-1 rounded-lg px-2 text-[12px] font-medium text-white/80 transition hover:bg-white/[0.06] hover:text-white md:flex">
-          Follow us
-          <ChevronDown className="h-3.5 w-3.5 text-white/50" />
+      <div className="flex shrink-0 items-center gap-1">
+        <button className="hidden h-8 items-center gap-1.5 rounded-full px-2.5 text-[12.5px] text-[#b0b4ba] transition hover:bg-white/[0.06] hover:text-white xl:flex">
+          <Download className="h-3.5 w-3.5" strokeWidth={1.9} />
+          Download for macOS
         </button>
-        <button className="hidden h-8 w-8 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/[0.06] hover:text-white md:flex">
-          <HelpCircle className="h-4 w-4" strokeWidth={1.8} />
+        <TopLink>Follow us</TopLink>
+        <TopLink>Enterprise</TopLink>
+
+        <button
+          className="hidden h-8 w-8 items-center justify-center rounded-full text-[#b0b4ba] transition hover:bg-white/[0.06] hover:text-white sm:flex"
+          aria-label="Rewards"
+        >
+          <Gift className="h-[17px] w-[17px]" strokeWidth={1.8} />
         </button>
-        <button className="relative hidden h-8 w-8 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/[0.06] hover:text-white md:flex">
-          <ShoppingBag className="h-4 w-4" strokeWidth={1.8} />
-          <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-red-500 ring-2 ring-[#0a0a0a]" />
+        <button
+          className="hidden h-8 w-8 items-center justify-center rounded-full text-[#b0b4ba] transition hover:bg-white/[0.06] hover:text-white sm:flex"
+          aria-label="Help"
+        >
+          <HelpCircle className="h-[17px] w-[17px]" strokeWidth={1.8} />
         </button>
-        <button className="relative flex h-8 w-8 items-center justify-center rounded-lg text-white/70 transition hover:bg-white/[0.06] hover:text-white sm:hidden">
-          <Bell className="h-4 w-4" strokeWidth={1.8} />
-        </button>
-        <span className="mx-1 hidden h-4 w-px bg-white/10 md:block" />
-        <button className="hidden h-8 items-center rounded-lg px-2 text-[12px] font-medium text-white/80 transition hover:bg-white/[0.06] hover:text-white md:flex">
-          Enterprise
+        <button
+          className="relative hidden h-8 w-8 items-center justify-center rounded-full text-[#b0b4ba] transition hover:bg-white/[0.06] hover:text-white sm:flex"
+          aria-label="Store"
+        >
+          <ShoppingBag className="h-[17px] w-[17px]" strokeWidth={1.8} />
+          <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-lime ring-2 ring-page" />
         </button>
 
-        {/* Credits + Upgrade pill */}
-        <div className="flex h-8 items-center gap-1 rounded-full border border-emerald-500/30 bg-[#0f1a12] py-[3px] pl-2.5 pr-[3px]">
-          <Gem className="h-3.5 w-3.5 text-emerald-400" strokeWidth={2.2} />
-          <span className="text-[12px] font-semibold text-emerald-300">40</span>
-          <span className="ml-0.5 h-3.5 w-3.5 rounded-full border border-emerald-500/40 text-center text-[8px] font-bold leading-[12px] text-emerald-300/70">
-            ?
-          </span>
-          <button className="ml-1 h-[26px] rounded-full bg-[linear-gradient(180deg,#34d399,#10b981)] px-3 text-[11.5px] font-semibold text-black shadow-[0_0_14px_-2px_rgba(52,211,153,0.6)] transition hover:brightness-110">
+        {/* Credits + Upgrade */}
+        <div className="ml-1 flex h-8 items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.04] py-[3px] pl-3 pr-[3px]">
+          <span className="text-[12px] font-semibold tabular-nums text-white">40</span>
+          <span className="hidden text-[11px] text-dim sm:inline">credits</span>
+          <button className="h-[24px] rounded-full bg-green px-2.5 text-[11px] font-medium leading-none text-[#0c130d] transition hover:brightness-110">
             Upgrade
           </button>
         </div>
 
-        <button className="ml-1 flex h-8 w-8 items-center justify-center rounded-full transition hover:ring-2 hover:ring-white/15">
-          <Avatar className="h-6 w-6" />
+        <button
+          className="ml-1 flex h-8 w-8 items-center justify-center rounded-full transition hover:ring-2 hover:ring-white/15"
+          aria-label="Account"
+        >
+          <Avatar className="h-7 w-7" />
         </button>
       </div>
     </header>

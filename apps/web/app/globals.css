@@ -1,26 +1,22 @@
 @import "tailwindcss";
 
 @theme {
+  /* Real OpenArt body stack */
   --font-sans:
-    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    "Noto Sans", Arial, sans-serif;
+  --font-display: "Bricolage Grotesque", var(--font-sans);
 
-  /* Client prototype design tokens */
-  --color-lime: #c8f542;
-  --color-brand-pink: #ff2d8a;
-  --color-surface: #0a0a0a;
-  --color-panel: #121212;
-
-  /* Animations from client/index.css */
-  --animate-fade-up: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
-  --animate-caret-blink: caret-blink 1s steps(1) infinite;
-  --animate-glow-pulse: glow-pulse 4s ease-in-out infinite;
-  --animate-shimmer: shimmer 6s ease-in-out infinite;
-
-  --keyframes-fade-up: from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); };
-  --keyframes-caret-blink: "0%, 100% { opacity: 1; } 50% { opacity: 0; }";
-  --keyframes-glow-pulse: "0%, 100% { opacity: 0.55; } 50% { opacity: 0.9; }";
-  --keyframes-shimmer: "0% { transform: translateX(-100%); } 100% { transform: translateX(100%); }";
+  /* OpenArt palette */
+  --color-lime: #aaff00;
+  --color-lime-soft: #bfff40;
+  --color-green: #16d866;
+  --color-page: #090a0a;
+  --color-panel: #121314;
+  --color-panel-2: #191a1c;
+  --color-ink: #b0b4ba;
+  --color-dim: rgba(214, 225, 255, 0.4);
+  --color-hair: rgba(214, 225, 255, 0.08);
 }
 
 html,
@@ -30,7 +26,7 @@ body {
 
 body {
   margin: 0;
-  background: #000;
+  background: var(--color-page);
   color: #fff;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -73,4 +69,134 @@ textarea {
 .thin-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+/* Entrance animation */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-up {
+  animation: fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Blinking caret for the animated placeholder */
+@keyframes caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+.caret-blink {
+  animation: caret-blink 1s steps(1) infinite;
+}
+
+/* Banner shimmer */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 80%
+  );
+  animation: shimmer 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Orbiting accent glow around the prompt box */
+@property --prompt-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes prompt-angle {
+  to {
+    --prompt-angle: 360deg;
+  }
+}
+
+.prompt-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 1.25rem;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--prompt-angle),
+    rgba(170, 255, 0, 0) 0deg,
+    rgba(170, 255, 0, 0) 200deg,
+    rgba(170, 255, 0, 0.35) 275deg,
+    #aaff00 325deg,
+    #dbff9b 345deg,
+    rgba(170, 255, 0, 0) 352deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: prompt-angle 4s linear infinite;
+  pointer-events: none;
+}
+
+.prompt-aura {
+  position: absolute;
+  inset: -1px;
+  border-radius: 1.25rem;
+  background: conic-gradient(
+    from var(--prompt-angle),
+    rgba(170, 255, 0, 0) 0deg,
+    rgba(170, 255, 0, 0) 210deg,
+    rgba(170, 255, 0, 0.15) 275deg,
+    rgba(170, 255, 0, 0.45) 325deg,
+    rgba(170, 255, 0, 0.12) 350deg,
+    rgba(170, 255, 0, 0) 360deg
+  );
+  filter: blur(10px);
+  opacity: 0.7;
+  animation: prompt-angle 4s linear infinite;
+  pointer-events: none;
+}
+
+/* Bottom fade used by the preset masonry, like OpenArt */
+.preset-fade {
+  -webkit-mask-image: linear-gradient(
+    rgb(0, 0, 0) 72%,
+    rgba(0, 0, 0, 0.85) 76%,
+    rgba(0, 0, 0, 0.45) 80%,
+    rgba(0, 0, 0, 0.12) 86%,
+    rgba(0, 0, 0, 0.02) 93%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  mask-image: linear-gradient(
+    rgb(0, 0, 0) 72%,
+    rgba(0, 0, 0, 0.85) 76%,
+    rgba(0, 0, 0, 0.45) 80%,
+    rgba(0, 0, 0, 0.12) 86%,
+    rgba(0, 0, 0, 0.02) 93%,
+    rgba(0, 0, 0, 0) 100%
+  );
 }

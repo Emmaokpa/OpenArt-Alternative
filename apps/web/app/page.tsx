@@ -1,15 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { DirectVideo } from "@/components/create/DirectVideo";
-import { Footer } from "@/components/shell/Footer";
-import { ModelRail, TemplateRail } from "@/components/discovery/ModelRail";
-import { PromoBanner } from "@/components/shell/PromoBanner";
-import { PresetGrid } from "@/components/discovery/PresetGrid";
 import { PromptBox } from "@/components/create/PromptBox";
+import { ModelRail } from "@/components/discovery/ModelRail";
+import { PresetGrid } from "@/components/discovery/PresetGrid";
 import { WhatsNew } from "@/components/discovery/WhatsNew";
-import { directVideoItems, whatsNewItems } from "@/data/content";
-import { useState } from "react";
+import { Inspirations } from "@/components/sections/Inspirations";
+import { ToolsGrid } from "@/components/sections/ToolsGrid";
+import { directVideoItems, placeholderPrompts, whatsNewItems } from "@/data/content";
 import { apiFetch } from "@/lib/api";
 
 export default function HomePage() {
@@ -21,17 +21,14 @@ export default function HomePage() {
     setIsPending(true);
     setError(null);
     try {
-      const data = await apiFetch<{ job: { id: string; status: string } }>(
-        "/v1/jobs",
-        {
-          method: "POST",
-          headers: { "idempotency-key": crypto.randomUUID() },
-          body: JSON.stringify({
-            type: "text_to_video",
-            params: { prompt, durationS: 5 },
-          }),
-        },
-      );
+      const data = await apiFetch<{ job: { id: string; status: string } }>("/v1/jobs", {
+        method: "POST",
+        headers: { "idempotency-key": crypto.randomUUID() },
+        body: JSON.stringify({
+          type: "text_to_video",
+          params: { prompt, durationS: 5 },
+        }),
+      });
       setJob(data.job);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create job");
@@ -42,41 +39,34 @@ export default function HomePage() {
 
   return (
     <AppShell active="home">
-      <PromoBanner onClose={() => {}} />
+      <PromptBox onSubmit={handleSubmit} placeholderPrompts={placeholderPrompts} />
 
-      <PromptBox
-        onSubmit={handleSubmit}
-        placeholderPrompts={[
-          "Upbeat background music video for a sneaker launch",
-          "A cinematic trailer for a sci-fi short film set on Mars",
-          "15-second UGC ad for a skincare brand, handheld, natural light",
-          "Neon-lit music video, slow dolly through a rainy Tokyo street",
-          "Real estate walkthrough of a modern glass house at golden hour",
-        ]}
-      />
-
-      <DirectVideo
-        items={directVideoItems}
-        onSelect={() => {}}
-        selectedId="launch"
-      />
+      <DirectVideo items={directVideoItems} onSelect={() => {}} selectedId="launch" />
 
       <WhatsNew items={whatsNewItems} />
       <PresetGrid />
+
+      <ToolsGrid />
       <ModelRail />
-      <TemplateRail />
-      <Footer />
+      <Inspirations />
 
       {isPending && (
-        <div className="mt-6 text-center text-white/70">Generating your video…</div>
-      )}
-      {job && (
-        <div className="mt-6 p-4 rounded-xl bg-white/[0.05] border border-white/[0.1]">
-          <p className="text-white/80">Job {job.id}</p>
-          <p className="text-brand-pink">{job.status}</p>
+        <div className="mt-8 flex items-center justify-center gap-2 text-[13px] text-[rgba(214,225,255,0.6)]">
+          <span className="h-3 w-3 animate-spin rounded-full border-2 border-lime/30 border-t-lime" />
+          Generating your video…
         </div>
       )}
-      {error && <div className="mt-6 text-center text-red-400">{error}</div>}
+      {job && (
+        <div className="mx-auto mt-6 w-full max-w-[520px] rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4">
+          <p className="text-[12.5px] text-[rgba(214,225,255,0.6)]">Job {job.id}</p>
+          <p className="mt-0.5 font-display text-[16px] font-semibold capitalize text-lime">
+            {job.status}
+          </p>
+        </div>
+      )}
+      {error && (
+        <div className="mt-6 text-center text-[13px] text-red-400">{error}</div>
+      )}
     </AppShell>
   );
 }
