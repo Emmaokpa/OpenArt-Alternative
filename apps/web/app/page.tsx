@@ -1,25 +1,81 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AppShell } from "@/components/shell/AppShell";
+import { Footer } from "@/components/shell/Footer";
 import { DirectVideo } from "@/components/create/DirectVideo";
 import { PromptBox } from "@/components/create/PromptBox";
 import { ModeToggle } from "@/components/create/ModeToggle";
-import { ModelRail } from "@/components/discovery/ModelRail";
 import { PromoBanner } from "@/components/shell/PromoBanner";
-import { PresetGrid } from "@/components/discovery/PresetGrid";
 import { WhatsNew } from "@/components/discovery/WhatsNew";
-import { TemplateRail } from "@/components/discovery/ModelRail";
+import { PresetGrid } from "@/components/discovery/PresetGrid";
 import { directVideoItems, whatsNewItems } from "@/data/content";
 import { apiFetch } from "@/lib/api";
+import { TemplateRail } from "@/components/discovery/ModelRail";
+import { SectionHeader } from "@/components/ui";
+
+interface ListedModel {
+  id: string;
+  name: string;
+  description: string | null;
+  image: string;
+  creditsPerUnit: number;
+  capability: string;
+  provider: string;
+}
 
 export default function HomePage() {
   const { user, isLoading } = useAuth();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [job, setJob] = useState<{ id: string; status: string } | null>(null);
+  const [models, setModels] = useState<ListedModel[]>([]);
+  const [modelId, setModelId] = useState(models[0]?.id || "");
+  const [prompt] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const modelsRes = await apiFetch<{ models: ListedModel[] }>("/v1/models?capability=text_to_video");
+        if (!cancelled) {
+          setModels(modelsRes.models || []);
+          if (modelsRes.models?.[0]) setModelId(modelsRes.models[0].id);
+        }
+      } catch {
+        // Ignore errors, fall back to empty
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleSubmit = async (promptValue: string) => {
+    setIsPending(true);
+    setError(null);
+    try {
+      const data = await apiFetch<{ job: { id: string; status: string } }>(
+        "/v1/jobs",
+        {
+          method: "POST",
+          headers: { "idempotency-key": crypto.randomUUID() },
+          body: JSON.stringify({
+            type: "text_to_video",
+            modelId: modelId || models[0]?.id,
+            params: { prompt: promptValue, durationS: 5 },
+          }),
+        },
+      );
+      setJob(data.job);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create job");
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -56,29 +112,6 @@ export default function HomePage() {
     );
   }
 
-  const handleSubmit = async (prompt: string) => {
-    setIsPending(true);
-    setError(null);
-    try {
-      const data = await apiFetch<{ job: { id: string; status: string } }>(
-        "/v1/jobs",
-        {
-          method: "POST",
-          headers: { "idempotency-key": crypto.randomUUID() },
-          body: JSON.stringify({
-            type: "text_to_video",
-            params: { prompt, durationS: 5 },
-          }),
-        },
-      );
-      setJob(data.job);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create job");
-    } finally {
-      setIsPending(false);
-    }
-  };
-
   return (
     <AppShell active="home">
       <PromoBanner onClose={() => {}} />
@@ -87,6 +120,7 @@ export default function HomePage() {
 
       <PromptBox
         onSubmit={handleSubmit}
+        defaultPrompt={prompt}
         placeholderPrompts={[
           "Upbeat background music video for a sneaker launch",
           "A cinematic trailer for a sci-fi short film set on Mars",
@@ -104,12 +138,46 @@ export default function HomePage() {
 
       <WhatsNew items={whatsNewItems} />
       <PresetGrid />
-      <ModelRail />
+
+      <div className="mt-10 flex w-full flex-col items-center gap-3">
+        <SectionHeader title="Latest AI Models" />
+        <div className="grid w-full grid-cols-2 gap-3 md:grid-cols-4">
+          {models.map((model) => (
+            <Link
+              key={model.id}
+              href={{
+                pathname: "/create/video",
+                query: { model: model.id, prompt: model.description },
+              }}
+              className="group flex cursor-pointer flex-col gap-2 text-left"
+            >
+              <div className="relative aspect-[441/248] w-full overflow-hidden rounded-2xl bg-[#141515] ring-1 ring-white/[0.06] transition-all duration-300 group-hover:ring-white/25">
+                <img
+                  src={model.image}
+                  alt={model.name}
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.05]"
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.35),transparent_60%)] opacity-70" />
+              </div>
+              <div className="px-0.5">
+                <p className="font-display text-[16px] font-semibold leading-[22px] tracking-[-0.24px] text-white md:text-[18px] md:leading-6 md:tracking-[-0.32px]">
+                  {model.name}
+                </p>
+                <p className="mt-0.5 line-clamp-2 text-[13px] leading-[18px] text-[rgba(214,225,255,0.4)]">
+                  {model.description}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
       <TemplateRail />
 
       <div className="mb-8 flex items-center justify-between">
         <h2 className="text-[17px] font-bold tracking-[-0.01em] text-white">Your Library</h2>
-        <Link href="/library" className="text-[12px] font-medium text-white/70 transition hover:text-white">
+        <Link href="/library" className="text-[12px] font-medium text-white/70 hover:text-white">
           View all &rarr;
         </Link>
       </div>
@@ -143,6 +211,7 @@ export default function HomePage() {
         </div>
       )}
       {error && <div className="mt-6 text-center text-[13px] text-red-400">{error}</div>}
+      <Footer />
     </AppShell>
   );
 }

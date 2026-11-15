@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { AppShell } from "@/components/shell/AppShell";
 import { Footer } from "@/components/shell/Footer";
@@ -12,6 +12,7 @@ export default function LibraryPage() {
   const { user, isLoading } = useAuth();
   const [jobs, setJobs] = useState<JobView[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,6 +64,22 @@ export default function LibraryPage() {
   if (error) return <p className="text-center text-[13px] text-red-400 mt-20">{error}</p>;
   if (!jobs) return <p className="text-center text-[13px] text-white/60 mt-20">Loading…</p>;
 
+  const handleDelete = async (jobId: string) => {
+    setDeleting(jobId);
+    try {
+      await apiFetch(`/v1/jobs/${jobId}`, { method: "DELETE" });
+      setJobs((prev) => (prev || []).filter((j) => j.id !== jobId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete job");
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const handleRetry = (job: JobView) => {
+    window.location.href = `/create/video?prompt=${encodeURIComponent(typeof job.params.prompt === "string" ? job.params.prompt : "")}&model=${job.modelId}`;
+  };
+
   return (
     <AppShell active="library">
       <header className="flex items-center justify-between">
@@ -87,6 +104,15 @@ export default function LibraryPage() {
                 <div className="flex gap-2 items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-white capitalize">{job.status}</span>
                   <span className="text-xs text-white/60">{job.progress}%</span>
+                  {job.status === "queued" || job.status === "running" ? (
+                    <button
+                      onClick={() => handleDelete(job.id)}
+                      disabled={deleting === job.id}
+                      className="text-xs text-red-400 hover:text-red-300"
+                    >
+                      Delete
+                    </button>
+                  ) : null}
                 </div>
 
                 <p className="text-[12px] text-white/60 line-clamp-2 mb-3">
@@ -115,12 +141,25 @@ export default function LibraryPage() {
                 ) : null}
 
                 <div className="flex justify-between items-center pt-2">
-                  <Link
-                    href={`/library/${job.id}`}
-                    className="text-[12px] font-medium text-lime hover:text-lime/90"
-                  >
-                    View details
-                  </Link>
+                  <div className="flex gap-2">
+                    {job.status === "succeeded" && output?.downloadUrl ? (
+                      <a
+                        href={output.downloadUrl}
+                        download
+                        className="text-[12px] font-medium text-lime hover:text-lime/90 flex items-center gap-1"
+                      >
+                        <Download className="h-3 w-3" /> Download
+                      </a>
+                    ) : null}
+                    {job.status === "failed" && (
+                      <button
+                        onClick={() => handleRetry(job)}
+                        className="text-[12px] font-medium text-lime hover:text-lime/90 flex items-center gap-1"
+                      >
+                        <RotateCcw className="h-3 w-3" /> Retry
+                      </button>
+                    )}
+                  </div>
                   <span className="text-[11px] text-white/50">
                     {new Date(job.createdAt).toLocaleDateString()}
                   </span>
@@ -135,4 +174,4 @@ export default function LibraryPage() {
   );
 }
 
-import { Play } from "lucide-react";
+import { Play, Download, RotateCcw } from "lucide-react";
