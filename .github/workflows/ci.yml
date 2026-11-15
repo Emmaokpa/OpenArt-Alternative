@@ -95,6 +95,9 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared package
+        run: pnpm --filter @app/shared build
+
       - name: Build web for Cloudflare
         run: pnpm --filter @app/web exec opennextjs-cloudflare build
 
