@@ -14,7 +14,7 @@ export const JOB_PIPELINES: Record<JobType, readonly JobStepKind[]> = {
   image_to_video: ["validate", "moderate", "submit", "wait", "store", "thumbnail"],
   text_to_image: ["moderate", "submit", "wait", "store", "thumbnail"],
   lip_sync: ["validate", "moderate", "submit", "wait", "store", "thumbnail"],
-  captions: ["validate", "moderate", "submit", "wait", "store"],
+  captions: ["validate", "moderate", "extract_audio", "submit", "wait", "store"],
 };
 
 /** Steps that need ffmpeg and therefore run on worker-media (concurrency 1). */

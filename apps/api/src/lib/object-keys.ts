@@ -42,7 +42,7 @@ export function outputKey(input: {
   userId: string;
   jobId: string;
   assetId: string;
-  folder: "output" | "thumb" | "captions";
+  folder: "output" | "thumb" | "captions" | "intermediate";
   extension: string;
 }): string {
   return `u/${input.userId}/jobs/${input.jobId}/${input.folder}/${input.assetId}.${input.extension}`;

@@ -29,13 +29,12 @@ export function createFalProvider(
   env: Pick<Env, "FAL_KEY" | "FAL_BASE_URL">,
   logger: Logger,
 ): ProviderAdapter {
-  if (!env.FAL_KEY) {
-    throw new ProviderError("PROVIDER_ERROR", "FAL_KEY is not configured", false);
-  }
-
   const baseUrl = env.FAL_BASE_URL.replace(/\/$/, "");
 
   async function falRequest(path: string, init: RequestInit): Promise<Response> {
+    if (!env.FAL_KEY) {
+      throw new ProviderError("PROVIDER_ERROR", "FAL_KEY is not configured", false);
+    }
     const response = await fetch(`${baseUrl}${path}`, {
       ...init,
       headers: {

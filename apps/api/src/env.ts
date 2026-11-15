@@ -87,6 +87,10 @@ export const envSchema = z
     // Optional shared secret for verifying fal.ai webhook signatures.
     FAL_WEBHOOK_SECRET: z.string().min(1).optional(),
 
+    // --- AssemblyAI (speech-to-text) ----------------------------------------
+    ASSEMBLYAI_API_KEY: z.string().min(1).optional(),
+    ASSEMBLYAI_BASE_URL: z.url().default("https://api.assemblyai.com"),
+
     // --- Spend limits -------------------------------------------------------
     // Global daily spend cap in micro-dollars. 0 = unlimited.
     DAILY_SPEND_CAP_USD_MICROS: z.coerce.number().int().min(0).default(0),

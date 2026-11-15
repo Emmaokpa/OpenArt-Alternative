@@ -46,6 +46,7 @@ export const JOB_STEP_KINDS = [
   "wait",
   "store",
   "download",
+  "extract_audio",
   "transcribe",
   "build_captions",
   "burn_captions",

@@ -83,3 +83,34 @@ export async function writeThumbnail(
     return false;
   }
 }
+
+/** Runs an arbitrary ffmpeg command. Returns false when ffmpeg is absent or fails. */
+export async function runFfmpeg(
+  args: string[],
+  options: { timeout?: number; maxBuffer?: number } = {},
+): Promise<boolean> {
+  if (!(await hasFfmpeg())) return false;
+  try {
+    await run("ffmpeg", args, {
+      timeout: options.timeout ?? 60_000,
+      maxBuffer: options.maxBuffer ?? 4 * 1024 * 1024,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** True when the `ffmpeg` binary is on PATH. Cached for the process lifetime. */
+let ffmpegAvailable: boolean | undefined;
+
+export async function hasFfmpeg(): Promise<boolean> {
+  if (ffmpegAvailable !== undefined) return ffmpegAvailable;
+  try {
+    await run("ffmpeg", ["-version"], { timeout: 5_000 });
+    ffmpegAvailable = true;
+  } catch {
+    ffmpegAvailable = false;
+  }
+  return ffmpegAvailable;
+}

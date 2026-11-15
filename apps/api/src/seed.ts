@@ -146,6 +146,36 @@ async function main(): Promise<void> {
         minUnits: "1",
         maxUnits: "30",
       },
+
+      // --- fal.ai lip sync (Phase 4) ---------------------------------------
+      {
+        id: "wav2lip",
+        label: "Wav2Lip (lip sync)",
+        description: "Lip sync video to audio (~$0.05/second).",
+        capability: "lip_sync",
+        provider: "lipsync",
+        providerModel: "fal-ai/wav2lip",
+        unit: "second",
+        costUsdMicrosPerUnit: 50000,
+        creditsPerUnit: "15",
+        minUnits: "1",
+        maxUnits: "60",
+      },
+
+      // --- AssemblyAI speech-to-text (Phase 4) ------------------------------
+      {
+        id: "assemblyai-stt",
+        label: "AssemblyAI Speech-to-Text",
+        description: "Speech to text with word-level timestamps (~$0.50/hour).",
+        capability: "stt",
+        provider: "assemblyai",
+        providerModel: "universal-2",
+        unit: "minute",
+        costUsdMicrosPerUnit: 8333, // ~$0.50/hour = ~$0.0083/minute
+        creditsPerUnit: "3",
+        minUnits: "1",
+        maxUnits: "60",
+      },
     ];
 
     for (const model of modelRows) {

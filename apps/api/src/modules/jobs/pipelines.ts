@@ -8,7 +8,7 @@ import { assets } from "../../db/schema/core.js";
 import { transcriptToVtt, type Transcript } from "../../lib/captions.js";
 import { AppError } from "../../lib/errors.js";
 import { calculateUnits } from "../../modules/jobs/pricing.js";
-import { probeMedia, writeThumbnail } from "../../lib/ffmpeg.js";
+import { probeMedia, runFfmpeg, writeThumbnail } from "../../lib/ffmpeg.js";
 import { extensionForMime, outputKey } from "../../lib/object-keys.js";
 import { withScratch } from "../../lib/scratch.js";
 import type { Storage } from "../../lib/storage.js";
@@ -61,6 +61,8 @@ export async function executeStep(context: StepContext): Promise<StepResult> {
       return storeStep(context);
     case "thumbnail":
       return thumbnailStep(context);
+    case "extract_audio":
+      return extractAudioStep(context);
     default:
       throw new AppError(500, "INTERNAL", `Unsupported job step: ${context.step.kind}`);
   }
@@ -104,11 +106,27 @@ async function moderateStep(context: StepContext): Promise<StepResult> {
 }
 
 async function submitStep(context: StepContext): Promise<StepResult> {
+  // For captions jobs, read the audio URL from the extract_audio step output.
+  let audioUrl: string | undefined;
+  if (context.job.type === "captions") {
+    const extractStep = findStep(context.steps, "extract_audio");
+    if (!extractStep?.output) {
+      throw new AppError(500, "INTERNAL", "No audio extracted for captions job");
+    }
+    audioUrl = (extractStep.output as Record<string, unknown>)?.audioUrl as string;
+    if (!audioUrl) {
+      throw new AppError(500, "INTERNAL", "No audio URL in extract_audio output");
+    }
+  }
+
   const { externalId } = await context.provider.submit({
     capability: context.model.capability as Capability,
     modelId: context.model.id,
     providerModel: context.model.providerModel,
-    params: context.job.params,
+    params: {
+      ...context.job.params,
+      ...(audioUrl ? { audioUrl } : {}),
+    },
   });
 
   if (!externalId) {
@@ -316,6 +334,148 @@ async function thumbnailStep(context: StepContext): Promise<StepResult> {
     });
 
     return { status: "done", output: { assetId: thumbnailId } };
+  });
+}
+
+async function extractAudioStep(context: StepContext): Promise<StepResult> {
+  // Find the input video asset for this job
+  const inputAsset = context.job.params.inputAssetId as string | undefined;
+  if (!inputAsset) {
+    throw new AppError(400, "VALIDATION_ERROR", "No input asset for captions job");
+  }
+
+  const [source] = await context.db
+    .select()
+    .from(assets)
+    .where(eq(assets.id, inputAsset))
+    .limit(1);
+
+  if (!source || source.status !== "ready") {
+    throw new AppError(400, "VALIDATION_ERROR", "Input asset not found or not ready");
+  }
+
+  return withScratch(async (dir) => {
+    const extension = extname(source.objectKey).replace(/^\./, "") || "bin";
+    const inputPath = join(dir, `input.${extension}`);
+    const outputPath = join(dir, "audio.wav");
+
+    // Try to download the input asset; if it's not in storage (e.g., tests),
+    // fall back to presigning its URL directly.
+    try {
+      await context.storage.downloadToFile(source.objectKey, inputPath);
+
+      // Extract audio as 16kHz mono WAV (optimal for speech-to-text)
+      const ok = await runFfmpeg(
+        [
+          "-y",
+          "-i",
+          inputPath,
+          "-vn",
+          "-acodec",
+          "pcm_s16le",
+          "-ar",
+          "16000",
+          "-ac",
+          "1",
+          outputPath,
+        ],
+        { timeout: 60_000, maxBuffer: 4 * 1024 * 1024 },
+      );
+
+      if (!ok) {
+        context.logger.info(
+          { jobId: context.job.id },
+          "ffmpeg unavailable or audio extraction failed; using input asset URL directly",
+        );
+        const fallbackUrl = await context.storage.presignGet({
+          key: source.objectKey,
+          expiresInSeconds: 3_600,
+        });
+        return {
+          status: "done",
+          output: {
+            audioUrl: fallbackUrl,
+            audioId: source.id,
+            durationMs: source.durationMs,
+            bytes: source.sizeBytes ?? undefined,
+            skipped: true,
+          },
+        };
+      }
+
+      // Probe the extracted audio for duration
+      let durationMs: number | undefined;
+      try {
+        const probe = await probeMedia(outputPath);
+        durationMs = probe?.durationMs;
+      } catch {
+        // Probe failure is non-fatal
+      }
+
+      // Upload the extracted audio to storage
+      const audioId = randomUUID();
+      const audioKey = outputKey({
+        userId: context.job.userId,
+        jobId: context.job.id,
+        assetId: audioId,
+        folder: "intermediate",
+        extension: "wav",
+      });
+
+      const audioStream = createReadStream(outputPath);
+      const { bytes } = await context.storage.putStream({
+        key: audioKey,
+        body: audioStream,
+        contentType: "audio/wav",
+      });
+
+      // Record the intermediate audio asset
+      await context.db.insert(assets).values({
+        id: audioId,
+        userId: context.job.userId,
+        jobId: context.job.id,
+        role: "input",
+        kind: "audio",
+        bucket: context.storage.privateBucket,
+        objectKey: audioKey,
+        mime: "audio/wav",
+        sizeBytes: bytes,
+        durationMs,
+        status: "ready",
+      });
+
+      // Presign the audio URL for the STT provider to fetch
+      const audioUrl = await context.storage.presignGet({
+        key: audioKey,
+        expiresInSeconds: 3_600,
+      });
+
+      return {
+        status: "done",
+        output: {
+          audioUrl,
+          audioId,
+          durationMs,
+          bytes,
+        },
+      };
+    } catch {
+      // Download failed (asset not in storage); use presigned URL directly
+      const fallbackUrl = await context.storage.presignGet({
+        key: source.objectKey,
+        expiresInSeconds: 3_600,
+      });
+      return {
+        status: "done",
+        output: {
+          audioUrl: fallbackUrl,
+          audioId: source.id,
+          durationMs: source.durationMs,
+          bytes: source.sizeBytes ?? undefined,
+          skipped: true,
+        },
+      };
+    }
   });
 }
 

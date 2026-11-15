@@ -3,6 +3,8 @@ import type { Logger } from "../logger.js";
 import type { ModelRecord } from "../modules/catalog/catalog.js";
 import { createFakeProvider } from "./fake/fake.js";
 import { createFalProvider } from "./fal/fal.js";
+import { createAssemblyAIAdapter } from "./assemblyai/assemblyai.js";
+import { createLipSyncAdapter } from "./lipsync/lipsync.js";
 import { ProviderError, type ProviderAdapter } from "./types.js";
 
 export interface ProviderRegistry {
@@ -18,6 +20,8 @@ export function createProviderRegistry(env: Env, logger: Logger): ProviderRegist
   const adapters = new Map<string, ProviderAdapter>([
     ["fake", createFakeProvider(env, logger)],
     ["fal", createFalProvider(env, logger)],
+    ["assemblyai", createAssemblyAIAdapter(env, logger)],
+    ["lipsync", createLipSyncAdapter(env, logger)],
   ]);
 
   return {
