@@ -1,8 +1,11 @@
 # Progress
 
-## Current phase: 2 — Real generation tools ✅ COMPLETE
+## Current phase: 3 — Web app port ✅ COMPLETE
 
-Phase 2 is complete and verified: `pnpm lint`, `pnpm typecheck`, `pnpm test` (42 tests) and `pnpm build` all pass. fal.ai adapters are registered, real models are seeded with current pricing, spend limits and concurrency controls are in place, webhooks accept fal.ai with signature verification, and the margin report admin endpoint is live.
+Phase 3 is complete: the `client/` React prototype has been ported to Next.js App Router
+in `apps/web`, wired to the API, and all checks pass. The home page features a working
+prompt box with live job creation, model/template rails, and the full shell (sidebar,
+top bar, promo banner, footer).
 
 ## Phase 2 checklist (all done)
 
