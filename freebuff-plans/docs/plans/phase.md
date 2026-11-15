@@ -103,22 +103,22 @@ An AI video generator with a large prompt box, templates, and style examples. Us
 
 **Done when:** each tool produces a stored result with the right credit charge; forced failures refund; costs are recorded per step. Use the cheapest settings in tests and keep a low prepaid balance.
 
-### Phase 3 — Web app and design (2 weeks)
+### Phase 3 — Web app and design (2 weeks) ✅ COMPLETE
 
 **Read first:** `06-frontend-web.md`, `05-storage-and-cloudflare.md`, `freebuff-plans/important.md`
 
-**Goal:** the real interface — the `client/` prototype ported to Next.js and wired to the API.
+**Goal:** the real interface — the `client/` prototype ported to Next.js and wired to the API. Port complete; `client/` removed from repo.
 
-**Tasks**
-- **Port the `client/` prototype into `apps/web`** (React + Vite → Next.js App Router), following the mapping in `freebuff-plans/important.md`. Keep the layout and visual language; do not redesign from scratch and do not ship `client/` as a second app.
-- Design tokens and the component set from `06`, extracted from `client/src/index.css` and `client/src/components/ui.tsx`.
-- Home page: prompt box, model and settings row, live credit cost, template grid — as laid out in `client/src/App.tsx` and `client/src/components/Hero.tsx`.
-- `/create/video`, `/create/image`, template detail page, templates API and admin editor, previews from the public bucket.
-- Library polish (thumbnails, progress, retry, delete, download). Static pricing page.
-- Replace every hard-coded array in `client/src/data/content.ts` with API data (`/v1/models`, `/v1/templates`); keep only UI copy static.
-- Swap prototype branding (name, logo, copy, Pexels images) for our own assets before launch.
-- Accessibility pass (captions on videos, keyboard use, reduced motion) and responsive layouts.
-- Playwright smoke tests against the fake provider.
+**Tasks (all done)**
+- ✅ Ported the `client/` prototype into `apps/web` (React + Vite → Next.js App Router), following the mapping in `freebuff-plans/important.md`. Kept the layout and visual language; did not redesign from scratch and did not ship `client/` as a second app. `client/` has been removed from the repo.
+- ✅ Design tokens and the component set from `06`, extracted from `client/src/index.css` and `client/src/components/ui.tsx` into `apps/web/app/globals.css` and `apps/web/components/ui/*`.
+- ✅ Home page: prompt box, model and settings row, live credit cost, template grid — as laid out in `client/src/App.tsx` and `client/src/components/Hero.tsx`.
+- ✅ `/create/video`, `/create/image`, template detail page, templates API and admin editor, previews from the public bucket.
+- ✅ Library polish (thumbnails, progress, retry, delete, download). Static pricing page.
+- ✅ Replace every hard-coded array in `client/src/data/content.ts` with API data (`/v1/models`, `/v1/templates`); keep only UI copy static.
+- ✅ Swap prototype branding (name, logo, copy, Pexels images) for our own assets before launch.
+- ✅ Accessibility pass (captions on videos, keyboard use, reduced motion) and responsive layouts.
+- ✅ Playwright smoke tests against the fake provider.
 
 **Done when:** the "Definition of done" in `06` passes and the site is deployed on `workers.dev`.
 

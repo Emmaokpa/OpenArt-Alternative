@@ -3,7 +3,8 @@
 ## Current phase: 3 — Web app port ✅ COMPLETE
 
 Phase 3 is complete: the `client/` React prototype has been ported to Next.js App Router
-in `apps/web`, wired to the API, and all checks pass. The home page features a working
+in `apps/web`, wired to the API, and all checks pass. The `client/` folder has been removed
+from the repo — its structure lives on in `apps/web/`. The home page features a working
 prompt box with live job creation, model/template rails, and the full shell (sidebar,
 top bar, promo banner, footer).
 
@@ -145,7 +146,7 @@ See the collapsed Phase 0 section in git history. Highlights: monorepo layout, P
 4. **Stack versions pinned:** pnpm 10.34.9, Node ≥ 24, TypeScript 6.0.3, Express 5.3.0, Drizzle 0.45.4, Zod 4.6.7, Next 16.4.6, OpenNext 1.20.17, wrangler 4.161.0, BullMQ 6.7.6, Better Auth 1.7.23, `@aws-sdk/*` 3.1169.0.
 5. **Drizzle over Prisma.**
 6. **LocalStack (not MinIO)** for local S3-compatible storage; MinIO community images are no longer published. Same AWS SDK client targets R2 in production.
-7. **`apps/web` is the Next.js port target.** `client/` React prototype untouched; 100% structure copied when ported in Phase 3.
+7. **`apps/web` is the Next.js port target.** `client/` React prototype removed from repo; 100% structure copied when ported in Phase 3.
 8. **`.npmrc` retry settings** for unstable connection.
 9. **Migrations run from `dist/migrate.js`** as Coolify pre-deployment command.
 10. **Job deletion is soft-delete** (`jobs.deleted_at`) because `credit_ledger.job_id` must be retained.

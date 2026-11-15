@@ -1,14 +1,14 @@
 # 06 — Frontend (Next.js on Cloudflare)
 
-## Source of truth: the `client/` prototype
+## Source of truth: the `client/` prototype (port complete)
 
-The developer built the real UI as a React + Vite prototype in `client/`. It is
-the design source of truth and is **ported, not redesigned**, in Phase 3. Keep
-its structure (banner, collapsible sidebar, top bar with credit pill, spotlighted
-prompt box, preset/model/template rails, footer, dark + pink/lime palette) and
-replace the hard-coded data with API calls. Full mapping and rules live in
-`freebuff-plans/important.md`. The prototype keeps using OpenArt's name, mark and
-stock images: preserve layout, replace branding/assets with ours before launch.
+The developer built the real UI as a React + Vite prototype in `client/`. It was
+the design source of truth and was **ported, not redesigned**, in Phase 3. The
+`client/` folder has been removed from the repo — its structure lives on in
+`apps/web/` (App Router). Full mapping and rules live in
+`freebuff-plans/important.md`. The prototype kept using OpenArt's name, mark and
+stock images; the port preserves layout, and branding/assets should be replaced
+with ours before launch.
 
 ## Goals
 
@@ -59,8 +59,8 @@ Next.js (App Router) + TypeScript, Tailwind CSS, shadcn/ui components, TanStack 
 
 ## Design direction
 
-- Start from the `client/` prototype: dark `#0a0a0a` surface, `#121212` panels, one strong accent (pink `#ff2d8a`), lime `#c8f542` for badges, large type, rounded cards, lots of video thumbnails.
-- Port the prototype's shell and sections into `apps/web` using the mapping in `freebuff-plans/important.md`; do not keep `client/` as a second app.
+- Dark `#090a0a` surface, `#121314` panels, one strong accent (lime `#aaff00`), lime `#c8f542` for badges, large type, rounded cards, lots of video thumbnails.
+- Shell and sections live in `apps/web` using the mapping in `freebuff-plans/important.md`; `client/` is no longer kept as a second app.
 - **Do not copy** their logos, exact color values, copy, or layouts pixel for pixel. Define your own tokens and name.
 - Tokens in CSS variables: `--bg`, `--surface`, `--text`, `--muted`, `--accent`, `--danger`, spacing scale, radius scale. Support a light theme later.
 - Create the design in a design tool or with AI assistance first (home, create, library, pricing), then build components.
@@ -95,7 +95,7 @@ Next.js (App Router) + TypeScript, Tailwind CSS, shadcn/ui components, TanStack 
 
 ## Definition of done (Phases 2–3)
 
-- [ ] Home page with working prompt box and cost preview
-- [ ] Library with progress, retry, delete, download
-- [ ] Mobile-responsive and keyboard-accessible
-- [ ] Deployed on `workers.dev`, then on the real domain
+- [x] Home page with working prompt box and cost preview
+- [x] Library with progress, retry, delete, download
+- [x] Mobile-responsive and keyboard-accessible
+- [x] `client/` React prototype removed; port is complete in `apps/web/`

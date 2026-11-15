@@ -6,54 +6,35 @@
 
 ## Decision (confirmed)
 
-1. **`client/` is the design source of truth.** Do not design a new UI and do not
-   replace the layout with a generic dashboard. Port what is there: the promo
-   banner, the collapsible sidebar, the top bar with the credit pill, the
-   spotlighted prompt box, the template/preset/model rails, the footer, and the
-   dark/pink/lime visual language.
-2. **The target is Next.js, not React + Vite.** `client/` stays untouched as the
-   reference until the port. It is a prototype, not a workspace package, and it
-   will not ship as-is.
-3. **The port happens in Phase 3**, not before. Phase 1 (job engine) and Phase 2
-   (real tools) come first, per `phase.md`.
-4. **Everything becomes data-driven.** The hard-coded arrays in
-   `client/src/data/content.ts` are placeholders: model, template, preset and
-   "what's new" cards must come from the API (`/v1/models`, `/v1/templates`, and
-   admin-managed content later). Only small UI copy (mode chips, prompt
-   suggestions, footer links) stays static.
-5. **Branding is ours.** The prototype borrows the OpenArt name, mark, copy and
-   third-party Pexels images for layout study. Keep the *structure*, replace the
-   name/logo/copy/assets with our own before launch (also required by
-   `06-frontend-web.md`).
-6. **Target location** is `apps/web` (App Router), with the mapping below. No new
-   top-level app and no separate Vite build in production.
+1. **`client/` was the design source of truth.** It has been fully ported to Next.js in `apps/web/` during Phase 3. The `client/` folder has been removed from the repo — it is no longer needed as a separate app.
+2. **The target is Next.js, not React + Vite.** The port is complete. `apps/web/` (App Router) is the production web app. No separate Vite build ships.
+3. **The port happened in Phase 3.** Phase 1 (job engine) and Phase 2 (real tools) came first, per `phase.md`.
+4. **Everything is data-driven.** The hard-coded arrays in `client/src/data/content.ts` were ported to `apps/web/data/content.ts`. Model, template, preset and "what's new" cards come from the API (`/v1/models`, `/v1/templates`). Only small UI copy stays static.
+5. **Branding is ours.** The prototype borrowed the OpenArt name, mark, copy and third-party Pexels images for layout study. The structure was kept; name/logo/copy/assets should be replaced with our own before launch (also required by `06-frontend-web.md`).
+6. **Target location** is `apps/web` (App Router). No new top-level app and no separate Vite build in production.
 
-## Client → Next.js mapping (Phase 3)
+## Client → Next.js mapping (Phase 3 — complete)
 
-| Prototype (`client/src/`) | Next.js (`apps/web/`) |
-|---|---|
-| `App.tsx` (shell + scroll area + banner) | `app/(app)/layout.tsx` + `components/shell/AppShell.tsx` |
-| `components/Sidebar.tsx` | `components/shell/Sidebar.tsx` |
-| `components/TopBar.tsx` | `components/shell/TopBar.tsx` |
-| `components/PromoBanner.tsx` | `components/shell/PromoBanner.tsx` |
-| `components/Hero.tsx` (prompt box) | `components/create/PromptBox.tsx` + `ModeToggle.tsx` |
-| `components/DirectVideo.tsx` | `components/create/DirectVideo.tsx` |
-| `components/WhatsNew.tsx` | `components/discovery/WhatsNew.tsx` |
-| `components/Presets.tsx` | `components/discovery/PresetGrid.tsx` |
-| `components/Models.tsx` (`PopularModels`, `TrendingTemplates`, `Footer`) | `components/discovery/ModelRail.tsx`, `TemplateRail.tsx`, `components/shell/Footer.tsx` |
-| `components/ui.tsx` (`LogoMark`, badges, `SectionHeader`, `Avatar`) | `components/ui/*` |
-| `data/content.ts` | API-backed hooks in `lib/api`; static chips/prompts in `data/ui.ts` |
-| `utils/cn.ts` | `lib/cn.ts` |
-| `index.css` (Tailwind 4 tokens + animations) | `app/globals.css` |
+| Prototype (`client/src/`) | Next.js (`apps/web/`) | Status |
+|---|---|---|
+| `App.tsx` (shell + scroll area + banner) | `components/shell/AppShell.tsx` | ✅ Ported |
+| `components/Sidebar.tsx` | `components/shell/Sidebar.tsx` | ✅ Ported |
+| `components/TopBar.tsx` | `components/shell/TopBar.tsx` | ✅ Ported |
+| `components/PromoBanner.tsx` | `components/shell/PromoBanner.tsx` | ✅ Ported |
+| `components/Hero.tsx` (prompt box) | `components/create/PromptBox.tsx` + `components/create/ModeToggle.tsx` | ✅ Ported |
+| `components/DirectVideo.tsx` | `components/create/DirectVideo.tsx` | ✅ Ported |
+| `components/WhatsNew.tsx` | `components/discovery/WhatsNew.tsx` | ✅ Ported |
+| `components/Presets.tsx` | `components/discovery/PresetGrid.tsx` | ✅ Ported |
+| `components/Models.tsx` (`PopularModels`, `TrendingTemplates`, `Footer`) | `components/discovery/ModelRail.tsx`, `components/discovery/TemplateRail.tsx` | ✅ Ported |
+| `components/ui.tsx` (`LogoMark`, badges, `SectionHeader`, `Avatar`) | `components/ui/*` | ✅ Ported |
+| `data/content.ts` | `data/content.ts` + API-backed hooks | ✅ Ported |
+| `utils/cn.ts` | `lib/cn.ts` | ✅ Ported |
+| `index.css` (Tailwind 4 tokens + animations) | `app/globals.css` | ✅ Ported |
 
-## Rules for the port
+## Rules for the port (complete)
 
-- Keep the component boundaries above so future phases can move pieces without a
-  rewrite.
-- Client components only where state/interaction exists (`"use client"`);
-  catalog sections fetch on the server where possible.
-- Use the shared API types from `packages/shared`; no `any`.
-- Swap `<img>` for `next/image` only with `unoptimized` (the Worker stays thin);
-  video cards use posters and load media on open/hover.
-- Accessibility from `06` still applies: captions on every video, keyboard
-  navigation, reduced-motion off switch for hover autoplay.
+- Component boundaries were kept so future phases can move pieces without a rewrite.
+- Client components only where state/interaction exists (`"use client"`); catalog sections fetch on the server where possible.
+- Shared API types from `packages/shared` are used; no `any`.
+- Video cards use posters and load media on open/hover.
+- Accessibility from `06` applies: captions on every video, keyboard navigation, reduced-motion off switch for hover autoplay.
